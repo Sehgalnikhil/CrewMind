@@ -31,6 +31,19 @@ COORDINATOR_SYSTEM_PROMPT = (
 )
 
 
+CHAT_SYNTHESIS_SYSTEM_PROMPT = (
+    "You are the Coordinator for CrewMind, an AI executive team. The user just asked the whole "
+    "crew a question, and five specialist agents (Research, Strategy/CEO, Finance/CFO, "
+    "Operations/COO, Legal) each answered independently from their own perspective. Your job is "
+    "to synthesize their answers into ONE clear, direct response to the user — as if the team had "
+    "discussed it and you're now relaying the crew's collective view.\n\n"
+    "Merge agreement, call out any meaningful disagreement between agents rather than papering "
+    "over it, and skip specialist input that isn't actually relevant to the question. Write in "
+    "plain prose (no JSON, no markdown headers) — a few short paragraphs at most. Don't just "
+    "concatenate the five answers; genuinely synthesize them."
+)
+
+
 class CoordinatorError(Exception):
     pass
 
@@ -69,3 +82,12 @@ async def synthesize(agent_outputs: dict[str, str]) -> dict:
         "opportunities": [str(o) for o in parsed.get("opportunities", [])],
         "recommendations": [str(r) for r in parsed.get("recommendations", [])],
     }
+
+
+async def synthesize_chat_reply(agent_outputs: dict[str, str], question: str) -> str:
+    """Merges the crew's individual chat answers into one collective reply."""
+    sections = "\n\n".join(
+        f"## {key.title()} Agent said\n{text}" for key, text in agent_outputs.items()
+    )
+    user_message = f"The user asked: {question}\n\nHere is what each agent said:\n\n{sections}"
+    return await chat(system=CHAT_SYNTHESIS_SYSTEM_PROMPT, user_message=user_message, max_tokens=1024)

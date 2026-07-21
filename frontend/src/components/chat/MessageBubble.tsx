@@ -1,9 +1,12 @@
 import { motion } from "framer-motion";
 
 import { cn } from "#/lib/utils";
-import { AGENTS, type AgentKey } from "#/types";
+import { AGENTS, type CrewAgentKey } from "#/types";
 
-function agentMeta(key: AgentKey | null) {
+const COORDINATOR_META = { name: "Coordinator", color: "#9B59B6" };
+
+function agentMeta(key: CrewAgentKey | null) {
+  if (key === "coordinator") return COORDINATOR_META;
   return AGENTS.find((a) => a.key === key);
 }
 
@@ -13,7 +16,7 @@ export function MessageBubble({
   content,
 }: {
   role: "user" | "agent" | "system";
-  agentKey: AgentKey | null;
+  agentKey: CrewAgentKey | null;
   content: string;
 }) {
   const isUser = role === "user";

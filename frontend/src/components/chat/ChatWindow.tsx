@@ -7,15 +7,8 @@ import { ChatInput } from "#/components/chat/ChatInput";
 import { MessageBubble } from "#/components/chat/MessageBubble";
 import { Spinner } from "#/components/ui/Spinner";
 import { useAgentChatSocket } from "#/hooks/useAgentChatSocket";
-import type { AgentKey } from "#/types";
 
-export function ChatWindow({
-  conversationId,
-  agentKey,
-}: {
-  conversationId: string;
-  agentKey: AgentKey;
-}) {
+export function ChatWindow({ conversationId }: { conversationId: string }) {
   const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -24,7 +17,7 @@ export function ChatWindow({
     queryFn: () => listMessages(conversationId),
   });
 
-  const { isStreaming, streamedText, error, sendMessage } = useAgentChatSocket(
+  const { isStreaming, streamedText, streamingAgentKey, error, sendMessage } = useAgentChatSocket(
     conversationId,
     () => queryClient.invalidateQueries({ queryKey: ["messages", conversationId] })
   );
@@ -55,7 +48,7 @@ export function ChatWindow({
         )}
 
         {isStreaming && (
-          <MessageBubble role="agent" agentKey={agentKey} content={streamedText || "..."} />
+          <MessageBubble role="agent" agentKey={streamingAgentKey} content={streamedText || "..."} />
         )}
 
         {error && (

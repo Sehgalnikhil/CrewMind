@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAuthStore } from "#/stores/authStore";
-import type { AgentKey } from "#/types";
+import type { CrewAgentKey } from "#/types";
 
 type SocketEvent =
-  | { type: "start"; agent_key: AgentKey }
+  | { type: "start"; agent_key: CrewAgentKey }
   | { type: "delta"; content: string }
-  | { type: "done"; message_id: string }
+  | { type: "done"; message_id: string; agent_key?: CrewAgentKey }
   | { type: "error"; message: string };
 
 export interface StreamingState {
   isStreaming: boolean;
   streamedText: string;
+  streamingAgentKey: CrewAgentKey | null;
   error: string | null;
 }
 
@@ -24,6 +25,7 @@ export function useAgentChatSocket(
   const [state, setState] = useState<StreamingState>({
     isStreaming: false,
     streamedText: "",
+    streamingAgentKey: null,
     error: null,
   });
   const bufferRef = useRef("");
@@ -39,15 +41,15 @@ export function useAgentChatSocket(
       const data: SocketEvent = JSON.parse(event.data);
       if (data.type === "start") {
         bufferRef.current = "";
-        setState({ isStreaming: true, streamedText: "", error: null });
+        setState({ isStreaming: true, streamedText: "", streamingAgentKey: data.agent_key, error: null });
       } else if (data.type === "delta") {
         bufferRef.current += data.content;
         setState((s) => ({ ...s, streamedText: bufferRef.current }));
       } else if (data.type === "done") {
-        setState({ isStreaming: false, streamedText: "", error: null });
+        setState({ isStreaming: false, streamedText: "", streamingAgentKey: null, error: null });
         onComplete(bufferRef.current);
       } else if (data.type === "error") {
-        setState({ isStreaming: false, streamedText: "", error: data.message });
+        setState({ isStreaming: false, streamedText: "", streamingAgentKey: null, error: data.message });
       }
     };
 

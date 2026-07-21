@@ -8,6 +8,10 @@ export interface UserProfile {
 
 export type AgentKey = "research" | "strategy" | "finance" | "operations" | "legal";
 
+// A message in an "all agents" conversation may come from the synthesis step
+// rather than one of the five named agents.
+export type CrewAgentKey = AgentKey | "coordinator";
+
 export interface AgentMeta {
   key: AgentKey;
   name: string;
@@ -79,7 +83,7 @@ export interface Conversation {
 export interface ChatMessage {
   id: string;
   role: "user" | "agent" | "system";
-  agent_key: AgentKey | null;
+  agent_key: CrewAgentKey | null;
   content: string;
   created_at: string;
 }
