@@ -1,8 +1,11 @@
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { FileText, Sparkles, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { listReports } from "#/api/reports";
 import { AppShell } from "#/components/layout/AppShell";
+import { HealthScoreGauge } from "#/components/dashboard/HealthScoreGauge";
 import { Card } from "#/components/ui/Card";
 import { AGENTS } from "#/types";
 
@@ -28,6 +31,9 @@ const QUICK_ACTIONS = [
 ];
 
 export function DashboardPage() {
+  const { data: reports } = useQuery({ queryKey: ["reports"], queryFn: listReports });
+  const latestReport = reports?.[0];
+
   return (
     <AppShell title="Dashboard">
       <motion.div
@@ -35,11 +41,27 @@ export function DashboardPage() {
         animate={{ opacity: 1 }}
         className="mx-auto max-w-5xl"
       >
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-white">Welcome to your executive team</h2>
-          <p className="mt-1 text-sm text-slate-400">
-            Upload your business documents and let your AI crew get to work.
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-6">
+          <div>
+            <h2 className="text-2xl font-semibold text-white">Welcome to your executive team</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Upload your business documents and let your AI crew get to work.
+            </p>
+          </div>
+
+          {latestReport && (
+            <Link to="/reports">
+              <Card className="flex items-center gap-4 py-4 transition-colors hover:border-crew-500/50">
+                <HealthScoreGauge score={latestReport.business_health_score} size={80} compact />
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Latest report</p>
+                  <p className="text-sm font-medium text-white">
+                    {new Date(latestReport.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </Card>
+            </Link>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">

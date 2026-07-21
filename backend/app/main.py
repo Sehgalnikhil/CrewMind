@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import agent_runs, auth, chat, documents, ws
+from app.api import agent_runs, auth, chat, documents, reports, ws
 from app.core.config import get_settings
 from app.core.database import init_db
 
@@ -24,6 +24,7 @@ app.include_router(auth.router)
 app.include_router(documents.router)
 app.include_router(chat.router)
 app.include_router(agent_runs.router)
+app.include_router(reports.router)
 app.include_router(ws.router)
 
 

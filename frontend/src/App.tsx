@@ -7,6 +7,7 @@ import { DashboardPage } from "#/routes/DashboardPage";
 import { DocumentsPage } from "#/routes/DocumentsPage";
 import { LoginPage } from "#/routes/LoginPage";
 import { RegisterPage } from "#/routes/RegisterPage";
+import { ReportsPage } from "#/routes/ReportsPage";
 import { SettingsPage } from "#/routes/SettingsPage";
 
 export default function App() {
@@ -43,6 +44,14 @@ export default function App() {
         element={
           <RequireAuth>
             <DocumentsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <RequireAuth>
+            <ReportsPage />
           </RequireAuth>
         }
       />
