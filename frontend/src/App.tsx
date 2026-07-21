@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { RequireAuth } from "#/components/RequireAuth";
 import { DashboardPage } from "#/routes/DashboardPage";
+import { DocumentsPage } from "#/routes/DocumentsPage";
 import { LoginPage } from "#/routes/LoginPage";
 import { RegisterPage } from "#/routes/RegisterPage";
 import { SettingsPage } from "#/routes/SettingsPage";
@@ -16,6 +17,14 @@ export default function App() {
         element={
           <RequireAuth>
             <DashboardPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/documents"
+        element={
+          <RequireAuth>
+            <DocumentsPage />
           </RequireAuth>
         }
       />
