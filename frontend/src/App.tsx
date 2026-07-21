@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { RequireAuth } from "#/components/RequireAuth";
+import { ChatPage } from "#/routes/ChatPage";
 import { DashboardPage } from "#/routes/DashboardPage";
 import { DocumentsPage } from "#/routes/DocumentsPage";
 import { LoginPage } from "#/routes/LoginPage";
@@ -17,6 +18,14 @@ export default function App() {
         element={
           <RequireAuth>
             <DashboardPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <RequireAuth>
+            <ChatPage />
           </RequireAuth>
         }
       />
