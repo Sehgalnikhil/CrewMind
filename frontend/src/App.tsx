@@ -5,6 +5,7 @@ import { AgentPanelPage } from "#/routes/AgentPanelPage";
 import { ChatPage } from "#/routes/ChatPage";
 import { DashboardPage } from "#/routes/DashboardPage";
 import { DocumentsPage } from "#/routes/DocumentsPage";
+import { LandingPage } from "#/routes/LandingPage";
 import { LoginPage } from "#/routes/LoginPage";
 import { RegisterPage } from "#/routes/RegisterPage";
 import { ReportsPage } from "#/routes/ReportsPage";
@@ -63,8 +64,8 @@ export default function App() {
           </RequireAuth>
         }
       />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
