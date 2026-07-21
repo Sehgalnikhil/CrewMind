@@ -1,0 +1,22 @@
+# Backend
+backend/.venv/
+backend/*.egg-info/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.db
+backend/storage/*
+!backend/storage/.gitkeep
+backend/chroma_data/*
+!backend/chroma_data/.gitkeep
+backend/.env
+*.pyc
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# Editors / OS
+.DS_Store
+*.log
