@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { RequireAuth } from "#/components/RequireAuth";
+import { AgentPanelPage } from "#/routes/AgentPanelPage";
 import { ChatPage } from "#/routes/ChatPage";
 import { DashboardPage } from "#/routes/DashboardPage";
 import { DocumentsPage } from "#/routes/DocumentsPage";
@@ -18,6 +19,14 @@ export default function App() {
         element={
           <RequireAuth>
             <DashboardPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/agents"
+        element={
+          <RequireAuth>
+            <AgentPanelPage />
           </RequireAuth>
         }
       />

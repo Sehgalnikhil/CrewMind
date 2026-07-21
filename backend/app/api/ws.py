@@ -6,10 +6,12 @@ from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
 from app.core.security import decode_access_token
+from app.models.agent_run import AgentRun
 from app.models.conversation import Conversation, Message
 from app.models.organization import Organization
 from app.models.user import User
 from app.services.agents import AGENT_REGISTRY
+from app.services.agents.progress_bus import subscribe, unsubscribe
 from app.services.llm.anthropic_client import LLMNotConfiguredError
 
 logger = logging.getLogger("crewmind.ws")
@@ -109,3 +111,40 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str, token: str 
                 await websocket.send_json({"type": "done", "message_id": agent_message.id})
     except WebSocketDisconnect:
         pass
+
+
+@router.websocket("/ws/agent-runs/{run_id}")
+async def agent_run_progress_websocket(websocket: WebSocket, run_id: str, token: str | None = None) -> None:
+    await websocket.accept()
+
+    auth = await _authenticate(token)
+    if auth is None:
+        await websocket.send_json({"type": "error", "message": "Authentication failed."})
+        await websocket.close()
+        return
+    _user, org = auth
+
+    async with AsyncSessionLocal() as db:
+        run = await db.get(AgentRun, run_id)
+        if run is None or run.org_id != org.id:
+            await websocket.send_json({"type": "error", "message": "Run not found."})
+            await websocket.close()
+            return
+        # If the run already finished before the client connected, replay the
+        # terminal state immediately instead of hanging waiting for an event.
+        if run.status in ("completed", "failed"):
+            await websocket.send_json({"type": "run_status", "status": run.status})
+            await websocket.close()
+            return
+
+    queue = subscribe(run_id)
+    try:
+        while True:
+            event = await queue.get()
+            await websocket.send_json(event)
+            if event["type"] in ("completed", "failed"):
+                break
+    except WebSocketDisconnect:
+        pass
+    finally:
+        unsubscribe(run_id, queue)
