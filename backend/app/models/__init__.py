@@ -3,6 +3,7 @@ from app.models.conversation import Conversation, Message
 from app.models.document import Document, DocumentChunk
 from app.models.memory import MemoryRecord
 from app.models.organization import Organization
+from app.models.metric import OrganizationMetric
 from app.models.report import Report
 from app.models.user import User
 
@@ -17,4 +18,5 @@ __all__ = [
     "AgentRun",
     "AgentRunOutput",
     "Report",
+    "OrganizationMetric",
 ]

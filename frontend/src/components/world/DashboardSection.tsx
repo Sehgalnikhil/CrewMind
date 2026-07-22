@@ -120,7 +120,7 @@ export function DashboardSection() {
                     Atlas: momentum accelerating
                   </span>
                 </div>
-                <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Monthly recurring revenue rising from $42K to $121K over twelve months">
+                <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Monthly recurring revenue rising from Rs 42K to Rs 121K over twelve months">
                   <defs>
                     <linearGradient id="dashFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#8A7BEF" stopOpacity="0.3" />
@@ -136,7 +136,7 @@ export function DashboardSection() {
                   <motion.g style={{ opacity: useTransform(scrollYProgress, [0.52, 0.58], [0, 1]) }}>
                     <circle cx={W} cy={12} r="5" fill="#8A7BEF" stroke="#05060C" strokeWidth="2" />
                     <text x={W - 12} y={16} textAnchor="end" fill="#e6e9f2" fontSize="13" fontWeight="700">
-                      $121K
+                      Rs 121K
                     </text>
                   </motion.g>
                 </svg>

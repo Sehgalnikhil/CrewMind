@@ -226,6 +226,92 @@ body {
   background-size: 56px 56px;
 }
 
+/* ============================================================
+   CrewMind Bright — the second premium theme.
+   Scoped overrides remap the dark utilities onto warm, layered
+   light surfaces without touching the approved dark identity.
+   ============================================================ */
+
+.world.bright {
+  background: #f3f0e9;
+  color: #21243a;
+}
+
+.world.bright .world-noise {
+  opacity: 0.028;
+}
+
+.world.bright .glass {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.82), rgba(255, 253, 247, 0.6) 45%, rgba(255, 255, 255, 0.72));
+  border: 1px solid rgba(33, 36, 58, 0.09);
+  box-shadow:
+    0 24px 60px -28px rgba(46, 40, 90, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.world.bright .glass-deep {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(252, 249, 242, 0.86));
+  border: 1px solid rgba(33, 36, 58, 0.1);
+  box-shadow:
+    0 40px 90px -36px rgba(46, 40, 90, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.world.bright .text-aurora {
+  background: linear-gradient(100deg, #21243a 10%, #5d4fc7 38%, #0876a8 62%, #21243a 90%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.world.bright .grid-lines {
+  background-image:
+    linear-gradient(rgba(93, 79, 199, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(93, 79, 199, 0.07) 1px, transparent 1px);
+}
+
+.world.bright .holo-sheen::after {
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(108, 92, 231, 0.1) 42%,
+    rgba(8, 145, 207, 0.12) 50%,
+    rgba(236, 72, 153, 0.08) 58%,
+    transparent 70%
+  );
+}
+
+/* Text remapping — keeps hierarchy, inverts value */
+.world.bright .text-white { color: #171a2e; }
+.world.bright .text-slate-100 { color: #21243a; }
+.world.bright .text-slate-200 { color: #2b2f48; }
+.world.bright .text-slate-300 { color: #3c4160; }
+.world.bright .text-slate-400 { color: #575d7c; }
+.world.bright .text-slate-500 { color: #6f7592; }
+.world.bright .text-slate-600 { color: #8d92ac; }
+
+/* Hairlines & soft fills */
+.world.bright [class*="border-white/"] { border-color: rgba(33, 36, 58, 0.1); }
+.world.bright [class*="bg-white/"] { background-color: rgba(33, 36, 58, 0.045); }
+.world.bright [class*="hover:bg-white/"]:hover { background-color: rgba(33, 36, 58, 0.07); }
+.world.bright [class*="hover:border-white/"]:hover { border-color: rgba(33, 36, 58, 0.22); }
+
+/* Solid inverse CTA: white pill becomes ink pill */
+.world.bright .bg-white { background-color: #171a2e; }
+.world.bright .text-black { color: #ffffff; }
+
+/* Dark chrome surfaces (sidebar / topbar / palette) become warm paper */
+.world.bright [class*="bg-[#0"] { background-color: rgba(252, 250, 244, 0.78); }
+
+.world.bright ::selection { background: #6c5ce7; color: #fff; }
+
+.world.bright * {
+  scrollbar-color: #c9c4b6 transparent;
+}
+.world.bright ::-webkit-scrollbar-thumb {
+  background-color: #c9c4b6;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .world *,
   .world *::before,

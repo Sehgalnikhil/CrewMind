@@ -12,7 +12,7 @@ from collections.abc import AsyncIterator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.document_processing.embedding_store import query as retrieve_chunks
-from app.services.llm.anthropic_client import chat, stream_chat
+from app.services.llm.gemini_client import chat, stream_chat
 from app.services.memory.memory_store import format_memory_for_prompt, read_recent_memory
 
 AGENT_REGISTRY: dict[str, "BaseAgent"] = {}

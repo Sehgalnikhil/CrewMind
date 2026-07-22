@@ -36,7 +36,7 @@ async def test_agent_run_builds_prompt_with_retrieved_context(async_session):
     with (
         patch(
             "app.services.agents.base.retrieve_chunks",
-            return_value=["Q1 revenue was $1.2M, up 20% QoQ."],
+            return_value=["Q1 revenue was Rs 1.2M, up 20% QoQ."],
         ),
         patch("app.services.agents.base.chat", new_callable=AsyncMock) as mock_chat,
     ):
@@ -46,7 +46,7 @@ async def test_agent_run_builds_prompt_with_retrieved_context(async_session):
     assert result == "Revenue grew 20% quarter over quarter."
     mock_chat.assert_awaited_once()
     _, kwargs = mock_chat.call_args
-    assert "Q1 revenue was $1.2M" in kwargs["user_message"]
+    assert "Q1 revenue was Rs 1.2M" in kwargs["user_message"]
     assert "How is revenue trending?" in kwargs["user_message"]
     assert kwargs["use_web_search"] is False
 
@@ -59,7 +59,7 @@ async def test_research_agent_requests_web_search(async_session):
         patch("app.services.agents.base.retrieve_chunks", return_value=[]),
         patch("app.services.agents.base.chat", new_callable=AsyncMock) as mock_chat,
     ):
-        mock_chat.return_value = "Competitor X raised a $50M Series B last month."
+        mock_chat.return_value = "Competitor X raised a Rs 50M Series B last month."
         await agent.run(async_session, org_id="org-1", message="What are competitors doing?")
 
     _, kwargs = mock_chat.call_args

@@ -2,9 +2,9 @@ import { motion } from "framer-motion";
 import { RadialBar, RadialBarChart } from "recharts";
 
 function scoreColor(score: number): string {
-  if (score >= 70) return "#2ECC71";
-  if (score >= 45) return "#F5A623";
-  return "#E74C3C";
+  if (score >= 70) return "#059669";
+  if (score >= 45) return "#D97706";
+  return "#EC4899";
 }
 
 function scoreLabel(score: number): string {

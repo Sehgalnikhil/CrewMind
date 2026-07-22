@@ -10,4 +10,4 @@ router = APIRouter(prefix="/api/status", tags=["status"])
 @router.get("")
 async def get_status(_user: User = Depends(get_current_user)) -> dict:
     settings = get_settings()
-    return {"llm_configured": settings.has_llm_key, "llm_model": settings.anthropic_model}
+    return {"llm_configured": settings.has_llm_key, "llm_model": settings.gemini_model}

@@ -4,7 +4,7 @@ import json
 import logging
 import re
 
-from app.services.llm.anthropic_client import chat
+from app.services.llm.gemini_client import chat
 
 logger = logging.getLogger("crewmind.coordinator")
 

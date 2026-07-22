@@ -141,8 +141,8 @@ export function CapabilitiesSection() {
 /* ================================================================ */
 const REPORT_LINES = [
   { agent: AGENTS[4], text: "Scanned 212 sources. Two competitors cut mid-tier pricing by ~15% this week." },
-  { agent: AGENTS[1], text: "Modelled impact: matching the cut costs $410K ARR; holding costs an estimated 2.1% churn." },
-  { agent: AGENTS[0], text: "Recommend holding price and shipping the retention bundle. Expected net: +$180K ARR." },
+  { agent: AGENTS[1], text: "Modelled impact: matching the cut costs Rs 410K ARR; holding costs an estimated 2.1% churn." },
+  { agent: AGENTS[0], text: "Recommend holding price and shipping the retention bundle. Expected net: +Rs 180K ARR." },
   { agent: AGENTS[2], text: "Bundle rollout drafted: 3 sprints, no new headcount. Owners assigned." },
   { agent: AGENTS[3], text: "No contractual barriers. Two enterprise MSAs need 30-day notice for packaging changes — filed." },
 ];
@@ -446,7 +446,7 @@ const STORIES = [
     quote: "Ledger caught a billing misconfiguration that three humans and two tools had missed for a year. It paid for itself in week two.",
     name: "Daniel Okafor",
     role: "CFO, Vantage Labs",
-    metric: "$220K recovered",
+    metric: "Rs 220K recovered",
   },
   {
     quote: "I don't have a general counsel. I have Clause. Our vendor renewals stopped being a place where money quietly leaks.",

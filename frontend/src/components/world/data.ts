@@ -24,7 +24,7 @@ export const AGENTS = [
     title: "Chief Financial Officer",
     color: "#D97706",
     glow: "rgba(217,119,6,0.35)",
-    tagline: "Every dollar, accounted for.",
+    tagline: "Every rupee, accounted for.",
     description:
       "Reads your P&L, runway and unit economics in real time. Flags margin drift weeks before it shows up in the monthly close.",
     stats: { decisions: "3,911", confidence: 97, focus: "Runway modelling" },

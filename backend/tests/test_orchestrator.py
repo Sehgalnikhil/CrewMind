@@ -123,7 +123,7 @@ async def test_orchestration_fails_gracefully_without_llm_key(test_db_session_fa
 
     queue = subscribe("run-2")
 
-    # No mocking of chat() here — real anthropic_client.chat() runs and raises
+    # No mocking of chat() here — real gemini_client.chat() runs and raises
     # LLMNotConfiguredError since no API key is set in the test environment.
     with patch("app.services.agents.orchestrator.AsyncSessionLocal", test_db_session_factory):
         await run_analysis("run-2", ORG_ID)

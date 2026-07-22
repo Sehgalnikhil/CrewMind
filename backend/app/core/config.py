@@ -18,9 +18,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 12
 
-    anthropic_api_key: str | None = None
-    anthropic_model: str = "claude-opus-4-8"
-    anthropic_fast_model: str = "claude-haiku-4-5-20251001"
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-1.5-flash"
+    gemini_fast_model: str = "gemini-1.5-flash"
 
     storage_dir: Path = BACKEND_DIR / "storage"
     chroma_dir: Path = BACKEND_DIR / "chroma_data"
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
 
     @property
     def has_llm_key(self) -> bool:
-        return bool(self.anthropic_api_key)
+        return bool(self.gemini_api_key)
 
 
 @lru_cache

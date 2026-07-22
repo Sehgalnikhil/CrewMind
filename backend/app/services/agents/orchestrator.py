@@ -15,7 +15,7 @@ from app.models.report import Report
 from app.services.agents import AGENT_REGISTRY, DOMAIN_AGENT_KEYS
 from app.services.agents.coordinator import synthesize
 from app.services.agents.progress_bus import publish
-from app.services.llm.anthropic_client import LLMNotConfiguredError
+from app.services.llm.gemini_client import LLMNotConfiguredError
 from app.services.memory.memory_store import write_memory
 
 logger = logging.getLogger("crewmind.orchestrator")

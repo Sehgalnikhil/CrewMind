@@ -15,48 +15,71 @@ export type CrewAgentKey = AgentKey | "coordinator";
 export interface AgentMeta {
   key: AgentKey;
   name: string;
+  /** Persona name used across the product (matches the landing page). */
+  persona: string;
   title: string;
+  /** Validated categorical color for the dark surface — do not eyeball-edit. */
   color: string;
   description: string;
+  focus: string[];
 }
 
 export const AGENTS: AgentMeta[] = [
   {
     key: "research",
     name: "Research",
-    title: "Market Intelligence",
-    color: "#22C1C3",
+    persona: "Scout",
+    title: "Chief Research Officer",
+    color: "#0891CF",
     description: "External context: market trends, competitors, industry signals.",
+    focus: ["Market research", "Competitor monitoring", "Industry trends", "News intelligence", "External insights"],
   },
   {
     key: "strategy",
     name: "Strategy",
-    title: "CEO",
-    color: "#6C5CE7",
+    persona: "Atlas",
+    title: "Chief Strategy Officer",
+    color: "#8A7BEF",
     description: "Growth, competitive position, business strategy.",
+    focus: ["Business strategy", "Growth opportunities", "SWOT analysis", "Market positioning", "Executive recommendations"],
   },
   {
     key: "finance",
     name: "Finance",
-    title: "CFO",
-    color: "#2ECC71",
+    persona: "Ledger",
+    title: "Chief Financial Officer",
+    color: "#D97706",
     description: "Revenue, KPIs, forecasting, financial health.",
+    focus: ["Revenue analysis", "KPI tracking", "Cash flow", "Forecasting", "Cost optimization"],
   },
   {
     key: "operations",
     name: "Operations",
-    title: "COO",
-    color: "#F5A623",
+    persona: "Flux",
+    title: "Chief Operating Officer",
+    color: "#059669",
     description: "Workflow, productivity, inventory, execution.",
+    focus: ["Workflow analysis", "Process optimization", "Inventory management", "Bottleneck detection", "Efficiency"],
   },
   {
     key: "legal",
     name: "Legal",
+    persona: "Clause",
     title: "General Counsel",
-    color: "#E74C3C",
+    color: "#EC4899",
     description: "Contracts, compliance, legal risk.",
+    focus: ["Contract review", "Compliance analysis", "Legal summaries", "Risk identification", "Policy validation"],
   },
 ];
+
+export const COORDINATOR_META = {
+  key: "coordinator" as const,
+  name: "Coordinator",
+  persona: "Nexus",
+  title: "AI Coordinator",
+  color: "#A395F4",
+  description: "Combines every agent's findings into one executive report.",
+};
 
 export type DocumentStatus = "uploaded" | "parsing" | "indexed" | "failed";
 

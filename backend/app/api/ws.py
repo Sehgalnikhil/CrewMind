@@ -14,7 +14,7 @@ from app.models.user import User
 from app.services.agents import AGENT_REGISTRY, DOMAIN_AGENT_KEYS
 from app.services.agents.coordinator import synthesize_chat_reply
 from app.services.agents.progress_bus import subscribe, unsubscribe
-from app.services.llm.anthropic_client import LLMNotConfiguredError
+from app.services.llm.gemini_client import LLMNotConfiguredError
 
 logger = logging.getLogger("crewmind.ws")
 router = APIRouter()
