@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
-import { FlaskConical, Save, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Download, FlaskConical, Save, Trash2 } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 import { AppShell } from "#/components/layout/AppShell";
 import { BlockTitle, GlowChip, Panel } from "#/components/os/ui";
@@ -110,6 +112,8 @@ export function SimulatorPage() {
   const [levers, setLevers] = useState<Levers>(BASELINE);
   const [saved, setSaved] = useState<Saved[]>([]);
   const [name, setName] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const p = useMemo(() => project(levers), [levers]);
   const base = useMemo(() => project(BASELINE), []);
@@ -124,6 +128,30 @@ export function SimulatorPage() {
     { label: "Runway", v: p.runway >= 99 ? Infinity : p.runway, d: (p.runway >= 99 ? 36 : p.runway) - (base.runway >= 99 ? 36 : base.runway), unit: "mo" },
   ];
 
+  const downloadPDF = async () => {
+    if (!gridRef.current || isExporting) return;
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(gridRef.current, {
+        // @ts-expect-error - html2canvas types might be slightly outdated depending on version
+        backgroundColor: "#05060C",
+        scale: 2,
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
+      const pdf = new jsPDF("p", "pt", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`simulator-report-${Date.now()}.pdf`);
+    } catch (error) {
+      console.error("Failed to generate PDF", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <AppShell title="Scenario Simulator" wide>
       <PageHero
@@ -131,9 +159,19 @@ export function SimulatorPage() {
         title="Stress-test it before you"
         accent="commit."
         body="Pull the levers. The projection reacts instantly — and so do your five executives."
+        action={
+          <button
+            onClick={downloadPDF}
+            disabled={isExporting}
+            className="flex items-center gap-2 rounded-xl bg-crew-500 px-4 py-2 text-sm font-bold text-white shadow-glow transition-all hover:bg-crew-400 disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            {isExporting ? "Generating PDF..." : "Download Report"}
+          </button>
+        }
       />
 
-      <div className="grid gap-5 xl:grid-cols-4">
+      <div ref={gridRef} className="grid gap-5 xl:grid-cols-4 p-2 -m-2">
         {/* levers */}
         <Panel delay={0.05} className="p-6 xl:col-span-1">
           <BlockTitle label="scenario builder" title="Levers" />

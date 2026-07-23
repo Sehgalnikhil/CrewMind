@@ -36,6 +36,18 @@ api.interceptors.request.use(async (config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
   }
+
+  // Scope every request to the active workspace so permissions, data and
+  // role all resolve against the organization the user is working in.
+  const { usePermissionStore } = await import("#/stores/permissionStore");
+  const workspaceId = usePermissionStore.getState().workspaceId;
+  if (workspaceId) {
+    if (config.headers && typeof config.headers.set === 'function') {
+      config.headers.set("x-workspace-id", workspaceId);
+    } else {
+      config.headers["x-workspace-id"] = workspaceId;
+    }
+  }
   return config;
 });
 

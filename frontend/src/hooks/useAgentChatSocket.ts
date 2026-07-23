@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAuthStore } from "#/stores/authStore";
+import { useAuth } from "@clerk/react";
 import type { CrewAgentKey } from "#/types";
 
 type SocketEvent =
@@ -20,7 +20,13 @@ export function useAgentChatSocket(
   conversationId: string | null,
   onComplete: (fullText: string) => void
 ) {
-  const token = useAuthStore((s) => s.token);
+  const { getToken } = useAuth();
+  const [token, setToken] = useState<string | null>(null);
+  
+  useEffect(() => {
+    getToken().then(setToken).catch(console.error);
+  }, [getToken]);
+
   const wsRef = useRef<WebSocket | null>(null);
   const [state, setState] = useState<StreamingState>({
     isStreaming: false,

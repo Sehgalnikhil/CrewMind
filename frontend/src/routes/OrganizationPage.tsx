@@ -2,11 +2,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Building2, Check, ChevronDown, Plus, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { useMutation, useQuery } from "@tanstack/react-query";
+
+import { createInvitation, listRoles } from "#/api/rbac";
 import { AppShell } from "#/components/layout/AppShell";
 import { BlockTitle, GlowChip, Panel } from "#/components/os/ui";
 import { PageHero, MeterBar } from "#/components/system/shared";
 import { AGENTS } from "#/types";
 import { useAuthStore } from "#/stores/authStore";
+import { usePermissionStore } from "#/stores/permissionStore";
 import { cn } from "#/lib/utils";
 
 const WORKSPACES = [
@@ -29,8 +33,25 @@ export function OrganizationPage() {
   const [workspace, setWorkspace] = useState(() => localStorage.getItem("crewmind-workspace") ?? "hq");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("Member");
+  const [inviteRoleId, setInviteRoleId] = useState<string>("");
   const [invites, setInvites] = useState<{ email: string; role: string }[]>([]);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const orgName = usePermissionStore((s) => s.context?.organization?.name);
+
+  const { data: roles } = useQuery({ queryKey: ["org-roles"], queryFn: listRoles });
+  const inviteMutation = useMutation({
+    mutationFn: ({ email, roleId }: { email: string; roleId: string }) => createInvitation(email, roleId),
+    onSuccess: (inv) => {
+      setInviteError(null);
+      const roleName = roles?.find((r) => r.id === inv.role_id)?.name ?? "MEMBER";
+      setInvites((prev) => [{ email: inv.email, role: roleName }, ...prev]);
+      setInviteEmail("");
+    },
+    onError: (e: unknown) => {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setInviteError(typeof detail === "string" ? detail : "Could not send the invitation.");
+    },
+  });
   const [profile, setProfile] = useState({ industry: "B2B SaaS", size: "51–100", founded: "2021" });
 
   useEffect(() => localStorage.setItem("crewmind-workspace", workspace), [workspace]);
@@ -40,7 +61,7 @@ export function OrganizationPage() {
       <PageHero
         label="company & workspaces"
         title="The shape of"
-        accent={user?.org_name ?? "your company."}
+        accent={orgName ?? user?.org_name ?? "your company."}
         body="Identity, workspaces, departments and the people inside them."
       />
 
@@ -124,27 +145,29 @@ export function OrganizationPage() {
               className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
             />
             <select
-              value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value)}
+              value={inviteRoleId || roles?.find((r) => r.name === "MEMBER")?.id || ""}
+              onChange={(e) => setInviteRoleId(e.target.value)}
               aria-label="Role"
               className="rounded-lg border border-white/10 bg-[#0B0D14] px-2 py-1.5 text-xs font-bold text-slate-300 outline-none"
             >
-              {["Admin", "Member", "Viewer"].map((r) => (
-                <option key={r}>{r}</option>
+              {(roles ?? []).filter((r) => r.name !== "OWNER").map((r) => (
+                <option key={r.id} value={r.id}>{r.name.charAt(0) + r.name.slice(1).toLowerCase()}</option>
               ))}
             </select>
             <button
               onClick={() => {
-                if (!inviteEmail.trim()) return;
-                setInvites([{ email: inviteEmail.trim(), role: inviteRole }, ...invites]);
-                setInviteEmail("");
+                const roleId = inviteRoleId || roles?.find((r) => r.name === "MEMBER")?.id;
+                if (!inviteEmail.trim() || !roleId) return;
+                inviteMutation.mutate({ email: inviteEmail.trim(), roleId });
               }}
+              disabled={inviteMutation.isPending}
               aria-label="Send invite"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-crew-500 text-white shadow-glow transition-transform hover:scale-105"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-crew-500 text-white shadow-glow transition-transform hover:scale-105 disabled:opacity-50"
             >
               <Send className="h-3.5 w-3.5" />
             </button>
           </div>
+          {inviteError && <p className="mt-2 text-[11px] text-[#f3c583]">{inviteError}</p>}
           <div className="mt-3 flex flex-col gap-1.5">
             <AnimatePresence initial={false}>
               {invites.map((i) => (

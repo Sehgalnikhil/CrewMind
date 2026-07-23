@@ -5,8 +5,10 @@ import { Building2, CheckCircle2, Cpu, ShieldCheck, User, XCircle } from "lucide
 import { getStatus } from "#/api/status";
 import { AppShell } from "#/components/layout/AppShell";
 import { BlockTitle, GlowChip, OrbitalLoader, Panel } from "#/components/os/ui";
+import { ROLE_LABELS } from "#/core/permissions/roles";
 import { AGENTS } from "#/types";
 import { useAuthStore } from "#/stores/authStore";
+import { usePermissionStore } from "#/stores/permissionStore";
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -14,6 +16,16 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</dt>
       <dd className="text-right text-sm font-semibold text-slate-100">{value}</dd>
     </div>
+  );
+}
+
+function RoleChip() {
+  const role = usePermissionStore((s) => s.context?.role);
+  if (!role) return null;
+  return (
+    <GlowChip className="ml-auto" color="#059669">
+      <User className="h-3 w-3" /> {ROLE_LABELS[role] ?? role}
+    </GlowChip>
   );
 }
 
@@ -42,9 +54,7 @@ export function SettingsPage() {
               <p className="text-base font-bold text-white">{user?.full_name}</p>
               <p className="text-xs text-slate-500">{user?.email}</p>
             </div>
-            <GlowChip className="ml-auto" color="#059669">
-              <User className="h-3 w-3" /> Owner
-            </GlowChip>
+            <RoleChip />
           </div>
           <dl className="space-y-2">
             <Row label="Full name" value={user?.full_name} />

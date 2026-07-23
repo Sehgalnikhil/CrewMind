@@ -11,6 +11,7 @@ from app.models.agent_run import AgentRun
 from app.models.conversation import Conversation, Message
 from app.models.rbac import OrganizationMember
 from app.models.user import User
+from app.models.war_room import WarRoomSession
 from app.services.agents import AGENT_REGISTRY, DOMAIN_AGENT_KEYS
 from app.services.agents.coordinator import synthesize_chat_reply
 from app.services.agents.progress_bus import subscribe, unsubscribe
@@ -264,3 +265,40 @@ async def dashboard_websocket(websocket: WebSocket, token: str | None = None) ->
             await websocket.receive_text()
     except WebSocketDisconnect:
         ws_manager.disconnect(workspace_id, websocket)
+
+
+@router.websocket("/ws/warroom/{session_id}")
+async def war_room_websocket(websocket: WebSocket, session_id: str, token: str | None = None) -> None:
+    """
+    WebSocket for War Room sessions.
+    Currently used to broadcast interjections or status updates between connected clients.
+    """
+    auth = await _authenticate(token)
+    if auth is None:
+        await websocket.accept()
+        await websocket.send_json({"type": "error", "message": "Authentication failed."})
+        await websocket.close()
+        return
+    _user, workspace_id = auth
+
+    async with AsyncSessionLocal() as db:
+        session = await db.get(WarRoomSession, session_id)
+        if session is None or session.workspace_id != workspace_id:
+            await websocket.accept()
+            await websocket.send_json({"type": "error", "message": "Session not found."})
+            await websocket.close()
+            return
+
+    await ws_manager.connect(f"warroom_{session_id}", websocket)
+    try:
+        while True:
+            # Broadcast any received messages to other clients in this session
+            raw = await websocket.receive_text()
+            try:
+                payload = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            await ws_manager.broadcast(f"warroom_{session_id}", payload)
+    except WebSocketDisconnect:
+        ws_manager.disconnect(f"warroom_{session_id}", websocket)
+

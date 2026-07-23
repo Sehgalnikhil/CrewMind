@@ -3,17 +3,18 @@ import { X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 import { cn } from "#/lib/utils";
-import { NAV_ENTRIES } from "#/lib/navigation";
+import { useAllowedNav } from "#/core/permissions/useNav";
 import { AGENTS } from "#/types";
 
 const GROUPS: { key: string; label: string | null; paths: string[] }[] = [
   { key: "command", label: null, paths: ["/dashboard", "/war-room", "/feed", "/timeline"] },
-  { key: "intelligence", label: "Intelligence", paths: ["/brain-map", "/wiki", "/twin", "/memory", "/simulator", "/brain"] },
+  { key: "intelligence", label: "Intelligence", paths: ["/wiki", "/twin", "/memory", "/simulator", "/brain"] },
   { key: "operate", label: "Operate", paths: ["/chat", "/documents", "/reports"] },
   { key: "system", label: "System", paths: ["/notifications", "/organization", "/billing", "/admin", "/profile", "/settings"] },
 ];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const allowedNav = useAllowedNav();
   return (
     <>
       {/* logo */}
@@ -30,14 +31,17 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </NavLink>
 
       <div className="flex-1 overflow-y-auto">
-        {GROUPS.map((group) => (
+        {GROUPS.map((group) => {
+          const visiblePaths = group.paths.filter((path) => allowedNav.some((e) => e.to === path));
+          if (visiblePaths.length === 0) return null;
+          return (
           <div key={group.key}>
             {group.label && (
               <p className="px-6 pb-1 pt-4 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">{group.label}</p>
             )}
             <nav className="flex flex-col gap-0.5 px-3 pt-1">
-              {group.paths.map((path) => {
-                const item = NAV_ENTRIES.find((e) => e.to === path)!;
+              {visiblePaths.map((path) => {
+                const item = allowedNav.find((e) => e.to === path)!;
                 const Icon = item.icon;
                 return (
                   <NavLink
@@ -75,7 +79,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               })}
             </nav>
           </div>
-        ))}
+          );
+        })}
 
         {/* executive roster */}
         <div className="mt-5 px-6">

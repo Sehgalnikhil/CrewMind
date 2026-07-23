@@ -16,7 +16,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import RequestContext, get_request_context
+from app.api.deps import RequestContext, RequiresPermission, get_request_context
+from app.core.audit import log_audit_event
 from app.core.database import get_db
 from app.models.agent_message import AgentMessage
 from app.models.agent_state import AgentState
@@ -121,7 +122,7 @@ async def get_agent_state(
 async def update_agent_state(
     agent_key: str,
     payload: AgentStateUpdate,
-    ctx: RequestContext = Depends(get_request_context),
+    ctx: RequestContext = Depends(RequiresPermission("agents.configure")),
     db: AsyncSession = Depends(get_db),
 ) -> AgentStateResponse:
     workspace_id = ctx.workspace.id if ctx.workspace else None
@@ -141,6 +142,13 @@ async def update_agent_state(
         state.confidence = max(0, min(100, payload.confidence))
     await db.commit()
     await db.refresh(state)
+
+    await log_audit_event(
+        db, workspace_id=workspace_id, user_id=ctx.user.id,
+        action="agents.configured",
+        resource_type="agent", resource_id=agent_key,
+        details={"goals_updated": payload.goals is not None, "confidence_updated": payload.confidence is not None},
+    )
     return _state_to_response(state)
 
 
@@ -162,7 +170,7 @@ async def get_agent_tasks(
 async def create_agent_task(
     agent_key: str,
     payload: AgentTaskCreate,
-    ctx: RequestContext = Depends(get_request_context),
+    ctx: RequestContext = Depends(RequiresPermission("agents.create")),
     db: AsyncSession = Depends(get_db),
 ) -> AgentTaskResponse:
     workspace_id = ctx.workspace.id if ctx.workspace else None
@@ -173,6 +181,12 @@ async def create_agent_task(
         priority=payload.priority,
         source="manual",
         due_at=payload.due_at,
+    )
+    await log_audit_event(
+        db, workspace_id=workspace_id, user_id=ctx.user.id,
+        action="agents.task_created",
+        resource_type="agent_task", resource_id=task.id,
+        details={"agent": agent_key, "title": payload.title},
     )
     return AgentTaskResponse.model_validate(task)
 

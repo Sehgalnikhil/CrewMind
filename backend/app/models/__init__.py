@@ -17,6 +17,7 @@ from app.models.security import (
     OrganizationDomain, WorkspaceInvitation, APIKey
 )
 from app.models.job import BackgroundJob
+from app.models.war_room import WarRoomSession, WarRoomTurn
 
 __all__ = [
     "User",
@@ -53,4 +54,6 @@ __all__ = [
     "WorkspaceInvitation",
     "APIKey",
     "BackgroundJob",
+    "WarRoomSession",
+    "WarRoomTurn",
 ]

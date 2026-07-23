@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { useAuthStore } from "#/stores/authStore";
+import { useAuth } from "@clerk/react";
 
 export type PanelAgentKey = "research" | "strategy" | "finance" | "operations" | "legal" | "coordinator";
 export type AgentPanelStatus = "idle" | "running" | "done";
@@ -31,7 +31,12 @@ const IDLE_STATUSES: Record<PanelAgentKey, AgentPanelStatus> = {
 };
 
 export function useAgentRunSocket(runId: string | null) {
-  const token = useAuthStore((s) => s.token);
+  const { getToken } = useAuth();
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    getToken().then(setToken).catch(console.error);
+  }, [getToken]);
   const wsRef = useRef<WebSocket | null>(null);
   const [state, setState] = useState<RunProgressState>({
     runStatus: null,

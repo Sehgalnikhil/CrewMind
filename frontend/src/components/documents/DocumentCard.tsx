@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { AlertCircle, CheckCircle2, FileSpreadsheet, FileText, Loader2, Presentation, Trash2 } from "lucide-react";
 
 import { deleteDocument } from "#/api/documents";
+import { Can } from "#/components/auth/Can";
 import type { DocumentItem } from "#/types";
 
 const TYPE_META: Record<string, { icon: typeof FileText; color: string }> = {
@@ -75,15 +76,17 @@ export function DocumentCard({ document }: { document: DocumentItem }) {
         {status.label}
       </span>
 
-      <button
-        onClick={() => mutation.mutate()}
-        disabled={mutation.isPending}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-600 opacity-0 transition-all hover:bg-[#EC4899]/15 hover:text-[#EC4899] focus:opacity-100 group-hover:opacity-100 disabled:opacity-40"
-        title="Delete"
-        aria-label={`Delete ${document.filename}`}
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
+      <Can permission="documents.delete">
+        <button
+          onClick={() => mutation.mutate()}
+          disabled={mutation.isPending}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-600 opacity-0 transition-all hover:bg-[#EC4899]/15 hover:text-[#EC4899] focus:opacity-100 group-hover:opacity-100 disabled:opacity-40"
+          title="Delete"
+          aria-label={`Delete ${document.filename}`}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </Can>
     </motion.div>
   );
 }

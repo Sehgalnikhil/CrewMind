@@ -110,8 +110,8 @@ function OrbitalMap({ hovered, onSelect }: { hovered: string | null; onSelect: (
             key={d.key}
             onClick={() => onSelect(d)}
             className={cn("absolute left-1/2 top-1/2 flex flex-col items-center", ["float-a", "float-b", "float-c"][i % 3], "pointer-events-auto")}
-            style={{ x: Math.cos(ang) * R - 34, y: Math.sin(ang) * R - 30 }}
-            animate={{ opacity: lit ? 1 : 0.35, scale: hovered === d.key ? 1.12 : 1 }}
+            initial={{ x: Math.cos(ang) * R - 34, y: Math.sin(ang) * R - 30 }}
+            animate={{ opacity: lit ? 1 : 0.35, scale: hovered === d.key ? 1.12 : 1, x: Math.cos(ang) * R - 34, y: Math.sin(ang) * R - 30 }}
             transition={{ type: "spring", stiffness: 300, damping: 26 }}
             aria-label={`Open ${d.name}`}
           >

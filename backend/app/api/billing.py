@@ -7,7 +7,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import RequestContext, get_current_user, get_request_context
+from app.api.deps import RequestContext, RequiresPermission, get_current_user
+from app.core.audit import log_audit_event
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.models.tenant import Subscription
@@ -32,7 +33,7 @@ class VerifyPaymentRequest(BaseModel):
 @router.post("/create-subscription")
 async def create_subscription(
     req: CreateSubscriptionRequest,
-    ctx: RequestContext = Depends(get_request_context),
+    ctx: RequestContext = Depends(RequiresPermission("billing.manage")),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -59,6 +60,12 @@ async def create_subscription(
         db.add(subscription)
         await db.commit()
 
+        await log_audit_event(
+            db, workspace_id=workspace_id, user_id=ctx.user.id,
+            action="billing.subscription_created",
+            resource_type="subscription", resource_id=subscription.id,
+            details={"plan": req.plan_name},
+        )
         return {"subscription_id": rzp_sub["id"], "key_id": settings.razorpay_key_id}
     except Exception:
         # Fallback to mock data if Razorpay API fails due to mock keys
@@ -71,13 +78,19 @@ async def create_subscription(
         )
         db.add(subscription)
         await db.commit()
+        await log_audit_event(
+            db, workspace_id=workspace_id, user_id=ctx.user.id,
+            action="billing.subscription_created",
+            resource_type="subscription", resource_id=subscription.id,
+            details={"plan": req.plan_name, "mocked": True},
+        )
         return {"subscription_id": "sub_mock_123", "key_id": settings.razorpay_key_id, "mocked": True}
 
 
 @router.post("/verify")
 async def verify_payment(
     req: VerifyPaymentRequest,
-    ctx: RequestContext = Depends(get_request_context),
+    ctx: RequestContext = Depends(RequiresPermission("billing.manage")),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -104,6 +117,12 @@ async def verify_payment(
         if subscription:
             subscription.status = "active"
             await db.commit()
+            await log_audit_event(
+                db, workspace_id=workspace_id, user_id=ctx.user.id,
+                action="billing.subscription_activated",
+                resource_type="subscription", resource_id=subscription.id,
+                details={"plan": subscription.plan_name},
+            )
 
         return {"status": "success"}
     except Exception as e:

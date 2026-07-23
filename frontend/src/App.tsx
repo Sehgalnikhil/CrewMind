@@ -4,7 +4,10 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { SignIn, SignUp } from "@clerk/react";
 
 import { RequireAuth } from "#/components/RequireAuth";
+import { PermissionRoute } from "#/components/auth/PermissionRoute";
 import { OrbitalLoader } from "#/components/os/ui";
+import { PermissionProvider } from "#/core/permissions/PermissionProvider";
+import { ROUTE_PERMISSIONS } from "#/core/permissions/permissions";
 import { LandingPage } from "#/routes/LandingPage";
 
 /* Each workspace is its own chunk — the OS boots fast and streams the rest. */
@@ -16,12 +19,10 @@ const DashboardPage = lazyPage(() => import("#/routes/DashboardPage"), "Dashboar
 const WarRoomPage = lazyPage(() => import("#/routes/WarRoomPage"), "WarRoomPage");
 const FeedPage = lazyPage(() => import("#/routes/FeedPage"), "FeedPage");
 const TimelinePage = lazyPage(() => import("#/routes/TimelinePage"), "TimelinePage");
-const KnowledgeGraphPage = lazyPage(() => import("#/routes/KnowledgeGraphPage"), "KnowledgeGraphPage");
 const DigitalTwinPage = lazyPage(() => import("#/routes/DigitalTwinPage"), "DigitalTwinPage");
 const MemoryPage = lazyPage(() => import("#/routes/MemoryPage"), "MemoryPage");
 const SimulatorPage = lazyPage(() => import("#/routes/SimulatorPage"), "SimulatorPage");
 const BrainPage = lazyPage(() => import("#/routes/BrainPage"), "BrainPage");
-const BrainMapPage = lazyPage(() => import("#/routes/BrainMapPage"), "default");
 const WikiPage = lazyPage(() => import("#/routes/WikiPage"), "default");
 
 const AgentPanelPage = lazyPage(() => import("#/routes/AgentPanelPage"), "AgentPanelPage");
@@ -36,18 +37,23 @@ const AdminPage = lazyPage(() => import("#/routes/AdminPage"), "AdminPage");
 const ProfilePage = lazyPage(() => import("#/routes/ProfilePage"), "ProfilePage");
 const SettingsPage = lazyPage(() => import("#/routes/SettingsPage"), "SettingsPage");
 
-function guard(node: ReactNode) {
+function guard(node: ReactNode, route?: string) {
+  const permission = route ? ROUTE_PERMISSIONS[route] : undefined;
   return (
     <RequireAuth>
-      <Suspense
-        fallback={
-          <div className="world flex h-screen items-center justify-center bg-[#05060C]">
-            <OrbitalLoader label="loading workspace" />
-          </div>
-        }
-      >
-        {node}
-      </Suspense>
+      <PermissionProvider>
+        <PermissionRoute permission={permission}>
+          <Suspense
+            fallback={
+              <div className="world flex h-screen items-center justify-center bg-[#05060C]">
+                <OrbitalLoader label="loading workspace" />
+              </div>
+            }
+          >
+            {node}
+          </Suspense>
+        </PermissionRoute>
+      </PermissionProvider>
     </RequireAuth>
   );
 }
@@ -60,16 +66,14 @@ export default function App() {
 
       <Route path="/dashboard" element={guard(<DashboardPage />)} />
 
-      <Route path="/war-room" element={guard(<WarRoomPage />)} />
+      <Route path="/war-room" element={guard(<WarRoomPage />, "/war-room")} />
       <Route path="/feed" element={guard(<FeedPage />)} />
       <Route path="/timeline" element={guard(<TimelinePage />)} />
 
-      <Route path="/graph" element={guard(<KnowledgeGraphPage />)} />
       <Route path="/twin" element={guard(<DigitalTwinPage />)} />
       <Route path="/memory" element={guard(<MemoryPage />)} />
-      <Route path="/simulator" element={guard(<SimulatorPage />)} />
+      <Route path="/simulator" element={guard(<SimulatorPage />, "/simulator")} />
       <Route path="/brain" element={guard(<BrainPage />)} />
-      <Route path="/brain-map" element={guard(<BrainMapPage />)} />
       <Route path="/wiki" element={guard(<WikiPage />)} />
 
       <Route path="/agents" element={guard(<AgentPanelPage />)} />
@@ -79,11 +83,11 @@ export default function App() {
       <Route path="/reports" element={guard(<ReportsPage />)} />
 
       <Route path="/notifications" element={guard(<NotificationsPage />)} />
-      <Route path="/organization" element={guard(<OrganizationPage />)} />
-      <Route path="/billing" element={guard(<BillingPage />)} />
-      <Route path="/admin" element={guard(<AdminPage />)} />
+      <Route path="/organization" element={guard(<OrganizationPage />, "/organization")} />
+      <Route path="/billing" element={guard(<BillingPage />, "/billing")} />
+      <Route path="/admin" element={guard(<AdminPage />, "/admin")} />
       <Route path="/profile" element={guard(<ProfilePage />)} />
-      <Route path="/settings" element={guard(<SettingsPage />)} />
+      <Route path="/settings" element={guard(<SettingsPage />, "/settings")} />
 
       <Route path="/" element={<LandingPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -18,7 +18,6 @@ interface AssistantTurn {
 const INTENTS: { match: RegExp; reply: string; to: string; toLabel: string }[] = [
   { match: /war\s*room|debate|deliberat/i, reply: "Convening the boardroom. The five executives will take your question to the strategy table.", to: "/war-room", toLabel: "Open War Room" },
   { match: /risk|runway|cash|burn/i, reply: "Ledger tracks runway and burn on Mission Control — the Risk Radar widget has the live picture.", to: "/dashboard", toLabel: "Open Mission Control" },
-  { match: /graph|connect|relation/i, reply: "Everything CrewMind knows is linked in the Knowledge Graph. I'll take you to the map.", to: "/graph", toLabel: "Open Knowledge Graph" },
   { match: /simulat|what if|scenario/i, reply: "The Scenario Simulator can stress-test that decision before you commit to it.", to: "/simulator", toLabel: "Open Simulator" },
   { match: /report|verdict/i, reply: "The latest signed verdicts live in Reports.", to: "/reports", toLabel: "Open Reports" },
   { match: /upload|document|file/i, reply: "Drop files into Documents and the crew will index them into organizational memory.", to: "/documents", toLabel: "Open Documents" },

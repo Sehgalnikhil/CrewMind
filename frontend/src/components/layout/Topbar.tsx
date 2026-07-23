@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { listDocuments } from "#/api/documents";
 import { listReports } from "#/api/reports";
+import { OrgSwitcher } from "#/components/layout/OrgSwitcher";
 import { navByPath } from "#/lib/navigation";
 import { useAuthStore } from "#/stores/authStore";
 import { useUiStore } from "#/stores/uiStore";
@@ -205,6 +206,8 @@ export function Topbar({
         >
           <Search className="h-[18px] w-[18px]" />
         </button>
+
+        <OrgSwitcher />
 
         <NotificationsMenu />
 

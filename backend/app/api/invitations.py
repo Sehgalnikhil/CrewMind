@@ -32,7 +32,7 @@ class AcceptInviteRequest(BaseModel):
 @router.post("", response_model=InviteResponse, status_code=status.HTTP_201_CREATED)
 async def create_invitation(
     payload: InviteRequest,
-    ctx: RequestContext = Depends(RequiresPermission("members.manage")),
+    ctx: RequestContext = Depends(RequiresPermission("users.invite")),
     db: AsyncSession = Depends(get_db)
 ) -> InviteResponse:
     if not ctx.workspace:
@@ -90,15 +90,23 @@ async def accept_invitation(
     if invitation.accepted_at:
         raise HTTPException(status_code=400, detail="Invitation already accepted")
         
-    if invitation.expires_at < datetime.now(timezone.utc):
+    expires_at = invitation.expires_at
+    if expires_at.tzinfo is None:  # SQLite stores naive UTC timestamps
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Invitation expired")
         
     if invitation.email != ctx.user.email:
         raise HTTPException(status_code=403, detail="Email mismatch")
         
     # Add to workspace
+    from app.models.tenant import Workspace
+    target_workspace = await db.get(Workspace, invitation.workspace_id)
+    if target_workspace is None:
+        raise HTTPException(status_code=404, detail="Workspace no longer exists")
     member = OrganizationMember(
         user_id=ctx.user.id,
+        org_id=target_workspace.org_id,
         workspace_id=invitation.workspace_id,
         role_id=invitation.role_id
     )
@@ -123,7 +131,7 @@ async def accept_invitation(
 @router.delete("/{invitation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_invitation(
     invitation_id: str,
-    ctx: RequestContext = Depends(RequiresPermission("members.manage")),
+    ctx: RequestContext = Depends(RequiresPermission("users.invite")),
     db: AsyncSession = Depends(get_db)
 ) -> None:
     if not ctx.workspace:

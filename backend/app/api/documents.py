@@ -6,7 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import RequestContext, get_current_user, get_request_context
+from app.api.deps import RequestContext, RequiresPermission, get_current_user, get_request_context
+from app.core.audit import log_audit_event
 from app.core.config import get_settings
 from app.core.database import AsyncSessionLocal, get_db
 from app.models.document import Document
@@ -54,7 +55,7 @@ async def upload_document(
     file: UploadFile,
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
-    ctx: RequestContext = Depends(get_request_context),
+    ctx: RequestContext = Depends(RequiresPermission("documents.upload")),
     db: AsyncSession = Depends(get_db),
 ) -> DocumentResponse:
     if not file.filename:
@@ -105,6 +106,13 @@ async def upload_document(
 
     background_tasks.add_task(_run_ingest_in_new_session, document.id, workspace_id, job.id)
 
+    await log_audit_event(
+        db, workspace_id=workspace_id, user_id=user.id,
+        action="documents.uploaded",
+        resource_type="document", resource_id=document.id,
+        details={"filename": file.filename, "file_type": file_type},
+    )
+
     return DocumentResponse.model_validate(document)
 
 
@@ -137,7 +145,7 @@ async def get_document(
 @router.delete("/{document_id}", status_code=204)
 async def delete_document(
     document_id: str,
-    ctx: RequestContext = Depends(get_request_context),
+    ctx: RequestContext = Depends(RequiresPermission("documents.delete")),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     workspace_id = ctx.workspace.id if ctx.workspace else None
@@ -155,5 +163,13 @@ async def delete_document(
     if storage_file.exists():
         storage_file.unlink()
 
+    deleted_name = document.filename
     await db.delete(document)
     await db.commit()
+
+    await log_audit_event(
+        db, workspace_id=workspace_id, user_id=ctx.user.id,
+        action="documents.deleted",
+        resource_type="document", resource_id=document_id,
+        details={"filename": deleted_name},
+    )

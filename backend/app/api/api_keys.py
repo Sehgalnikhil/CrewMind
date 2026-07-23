@@ -38,7 +38,7 @@ class APIKeyResponse(BaseModel):
 @router.post("", response_model=APIKeyCreatedResponse, status_code=status.HTTP_201_CREATED)
 async def create_api_key(
     payload: CreateAPIKeyRequest,
-    ctx: RequestContext = Depends(RequiresPermission("workspace.manage")),
+    ctx: RequestContext = Depends(RequiresPermission("api_keys.manage")),
     db: AsyncSession = Depends(get_db)
 ) -> APIKeyCreatedResponse:
     if not ctx.workspace:
@@ -83,7 +83,7 @@ async def create_api_key(
 
 @router.get("", response_model=list[APIKeyResponse])
 async def list_api_keys(
-    ctx: RequestContext = Depends(RequiresPermission("workspace.read")),
+    ctx: RequestContext = Depends(RequiresPermission("api_keys.view")),
     db: AsyncSession = Depends(get_db)
 ) -> list[APIKeyResponse]:
     if not ctx.workspace:
@@ -112,7 +112,7 @@ async def list_api_keys(
 @router.delete("/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_api_key(
     key_id: str,
-    ctx: RequestContext = Depends(RequiresPermission("workspace.manage")),
+    ctx: RequestContext = Depends(RequiresPermission("api_keys.manage")),
     db: AsyncSession = Depends(get_db)
 ) -> None:
     if not ctx.workspace:

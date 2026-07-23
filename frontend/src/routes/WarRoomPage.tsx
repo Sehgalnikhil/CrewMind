@@ -13,9 +13,11 @@ import {
   resolveScript,
 } from "#/components/warroom/scripts";
 import type { DeliberationScript, PhaseKey, ScriptTurn, Verdict } from "#/components/warroom/scripts";
-import { AGENTS, COORDINATOR_META } from "#/types";
-import type { CrewAgentKey } from "#/types";
+import { AGENTS, COORDINATOR_META, type CrewAgentKey } from "#/types";
 import { cn } from "#/lib/utils";
+import { api } from "#/api/client";
+import { ExecutivePanel } from "#/components/warroom/ExecutivePanel";
+import { useWarRoomSocket } from "#/hooks/useWarRoomSocket";
 
 const CREW = [...AGENTS, COORDINATOR_META];
 
@@ -33,30 +35,30 @@ const SEATS: Record<string, { x: number; y: number }> = {
   coordinator: { x: 50, y: 78 },
 };
 
-type SessionState = "idle" | "running" | "verdict";
-
-interface PlayedTurn extends ScriptTurn {
+export interface PlayedTurn extends ScriptTurn {
   id: number;
-  /** Text visible so far (streaming). */
+  user?: never;
   shown: string;
   done: boolean;
 }
 
-interface UserTurn {
+export type UserTurn = {
   id: number;
   user: true;
   text: string;
-}
+};
 
-type TranscriptItem = PlayedTurn | UserTurn;
+export type TranscriptItem = PlayedTurn | UserTurn;
 
-function isUserTurn(t: TranscriptItem): t is UserTurn {
+export function isUserTurn(t: TranscriptItem): t is UserTurn {
   return "user" in t;
 }
 
+type SessionState = "idle" | "running" | "verdict";
+
 /* ---------------- stage: the strategy table ---------------- */
 
-function TableStage({ speaker, respondingTo }: { speaker: CrewAgentKey | null; respondingTo?: CrewAgentKey | "user" }) {
+function TableStage({ speaker, respondingTo, selected, onSelect }: { speaker: CrewAgentKey | null; respondingTo?: CrewAgentKey | "user"; selected: CrewAgentKey | null; onSelect: (k: CrewAgentKey) => void }) {
   const from = speaker ? SEATS[speaker] : null;
   const to = respondingTo && respondingTo !== "user" ? SEATS[respondingTo] : null;
   return (
@@ -81,31 +83,34 @@ function TableStage({ speaker, respondingTo }: { speaker: CrewAgentKey | null; r
       </svg>
       {CREW.map((a, i) => {
         const seat = SEATS[a.key];
-        const active = speaker === a.key;
+        const isSpeaking = speaker === a.key;
+        const isSelected = selected === a.key;
+        const dim = selected && !isSelected;
         return (
-          <motion.div
+          <motion.button
             key={a.key}
-            className={cn("absolute -translate-x-1/2 -translate-y-1/2", ["float-a", "float-b", "float-c"][i % 3])}
+            onClick={() => onSelect(a.key)}
+            className={cn("absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center", ["float-a", "float-b", "float-c"][i % 3])}
             style={{ left: `${seat.x}%`, top: `${seat.y}%` }}
-            animate={{ scale: active ? 1.18 : 1 }}
+            animate={{ scale: isSelected ? 1.25 : isSpeaking ? 1.18 : 1, opacity: dim ? 0.4 : 1 }}
             transition={{ type: "spring", stiffness: 320, damping: 24 }}
           >
             <div
               className={cn("flex h-11 w-11 items-center justify-center rounded-2xl border text-sm font-extrabold backdrop-blur-md sm:h-12 sm:w-12")}
               style={{
-                backgroundColor: `${a.color}${active ? "38" : "1d"}`,
-                borderColor: `${a.color}${active ? "aa" : "44"}`,
+                backgroundColor: `${a.color}${isSelected ? "55" : isSpeaking ? "38" : "1d"}`,
+                borderColor: `${a.color}${isSelected ? "dd" : isSpeaking ? "aa" : "44"}`,
                 color: a.color,
-                boxShadow: active ? `0 0 34px -6px ${a.color}` : `0 0 18px -10px ${a.color}`,
+                boxShadow: isSelected ? `0 0 44px -4px ${a.color}` : isSpeaking ? `0 0 34px -6px ${a.color}` : `0 0 18px -10px ${a.color}`,
               }}
             >
               {a.persona[0]}
             </div>
             <p className="mt-1 text-center font-mono text-[8px] uppercase tracking-widest text-slate-500">{a.persona}</p>
-            {active && (
-              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full status-ping" style={{ backgroundColor: a.color, color: a.color }} />
+            {isSpeaking && (
+              <span className="absolute -right-0.5 top-0.5 h-2 w-2 rounded-full status-ping" style={{ backgroundColor: a.color, color: a.color }} />
             )}
-          </motion.div>
+          </motion.button>
         );
       })}
     </div>
@@ -299,6 +304,10 @@ export function WarRoomPage() {
   const [speed, setSpeed] = useState<1 | 2>(1);
   const [input, setInput] = useState("");
   const [followInput, setFollowInput] = useState("");
+  const [selectedExecutive, setSelectedExecutive] = useState<CrewAgentKey | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  
+  useWarRoomSocket(sessionId);
 
   const queueRef = useRef<ScriptTurn[]>([]);
   const verdictRef = useRef<Verdict | null>(null);
@@ -363,7 +372,7 @@ export function WarRoomPage() {
   }, [schedule]);
 
   const start = useCallback(
-    (question: string) => {
+    async (question: string) => {
       const s = resolveScript(question);
       clearTimer();
       setScript(s);
@@ -373,6 +382,28 @@ export function WarRoomPage() {
       queueRef.current = [...s.turns];
       setSession("running");
       setPlaying(true);
+      
+      try {
+        const response = await api.post("/warroom", {
+          question,
+          verdict: s.verdict,
+          turns: s.turns.map(t => ({
+            is_user: false,
+            speaker: t.speaker,
+            responding_to: t.respondingTo,
+            phase: t.phase,
+            reasoning: t.reasoning,
+            text: t.text,
+            stance: t.stance,
+            confidence: t.confidence,
+            evidence: t.evidence
+          }))
+        });
+        setSessionId(response.data.id);
+      } catch (err) {
+        console.error("Failed to save session:", err);
+      }
+      
       schedule(playNext, 400);
     },
     [playNext, schedule],
@@ -472,7 +503,7 @@ export function WarRoomPage() {
                 </div>
               )}
             </div>
-            <TableStage speaker={streamingTurn?.speaker ?? null} respondingTo={streamingTurn?.respondingTo} />
+            <TableStage speaker={streamingTurn?.speaker ?? null} respondingTo={streamingTurn?.respondingTo} selected={selectedExecutive} onSelect={(k) => setSelectedExecutive(selectedExecutive === k ? null : k)} />
           </Panel>
 
           {/* transcript / idle prompt */}
@@ -575,7 +606,19 @@ export function WarRoomPage() {
                 </AnimatePresence>
               </div>
 
-              {/* interject / follow-up */}
+              {/* Executive Panel */}
+              <AnimatePresence>
+                {selectedExecutive && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 50 }}
+                    className="absolute inset-0 z-10 flex flex-col bg-[#0B0D14]"
+                  >
+                    <ExecutivePanel selected={selectedExecutive} onClose={() => setSelectedExecutive(null)} transcript={transcript} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div className="border-t border-white/[0.07] p-3">
                 <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] py-1.5 pl-4 pr-1.5 transition-colors focus-within:border-crew-500/40">
                   <input
@@ -601,32 +644,67 @@ export function WarRoomPage() {
 
         {/* right rail */}
         <div className="flex w-full shrink-0 flex-col gap-4 xl:w-80 xl:overflow-y-auto">
-          <Panel delay={0.1} className="p-5">
-            <BlockTitle label="session" title="Deliberation phase" />
-            <PhaseRail phase={currentPhase} done={session === "verdict"} />
-          </Panel>
-          <Panel delay={0.16} className="p-5">
-            <BlockTitle label="alignment" title="Table consensus" />
-            <ConsensusGauge latest={latest} />
-          </Panel>
-          <Panel delay={0.22} className="p-5">
-            <BlockTitle label="who agrees with whom" title="Agreement matrix" />
-            <AgreementMatrix latest={latest} />
-          </Panel>
-          <Panel delay={0.28} className="p-5">
-            <BlockTitle label="cited this session" title="Evidence" />
-            {evidenceCollected.length === 0 ? (
-              <p className="py-3 text-center text-xs text-slate-500">Evidence lands here as executives cite it.</p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {evidenceCollected.map((e) => (
-                  <span key={e} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold text-slate-300">
-                    {e}
-                  </span>
-                ))}
-              </div>
-            )}
-          </Panel>
+          {selectedExecutive ? (
+            <>
+              <Panel delay={0.1} className="p-5">
+                <BlockTitle label="stance comparison" title="Agreement" />
+                {(() => {
+                  const myLatest = latest[selectedExecutive];
+                  if (!myLatest) return <p className="text-xs text-slate-500 py-4 text-center">No position yet.</p>;
+                  return (
+                    <div className="flex flex-col gap-3">
+                      {AGENTS.filter(a => a.key !== selectedExecutive).map(a => {
+                        const theirLatest = latest[a.key];
+                        const agreement = stanceAgreement(myLatest, theirLatest);
+                        const bg = agreement === null ? "bg-white/[0.04]" : agreement === 1 ? "bg-[#059669]/20 text-[#059669]" : agreement === 0 ? "bg-[#EC4899]/20 text-[#EC4899]" : "bg-[#D97706]/20 text-[#D97706]";
+                        const label = agreement === null ? "Waiting" : agreement === 1 ? "Aligned" : agreement === 0 ? "Opposed" : "Partial";
+                        return (
+                          <div key={a.key} className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                            <div className="flex items-center gap-2">
+                              <span className="h-6 w-6 rounded-md flex items-center justify-center font-extrabold text-[10px]" style={{ backgroundColor: `${a.color}22`, color: a.color }}>
+                                {a.persona[0]}
+                              </span>
+                              <span className="text-xs font-bold text-white">{a.persona}</span>
+                            </div>
+                            <span className={cn("text-[10px] font-bold px-2 py-1 rounded-md", bg)}>{label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </Panel>
+            </>
+          ) : (
+            <>
+              <Panel delay={0.1} className="p-5">
+                <BlockTitle label="session" title="Deliberation phase" />
+                <PhaseRail phase={currentPhase} done={session === "verdict"} />
+              </Panel>
+              <Panel delay={0.16} className="p-5">
+                <BlockTitle label="alignment" title="Table consensus" />
+                <ConsensusGauge latest={latest} />
+              </Panel>
+              <Panel delay={0.22} className="p-5">
+                <BlockTitle label="who agrees with whom" title="Agreement matrix" />
+                <AgreementMatrix latest={latest} />
+              </Panel>
+              <Panel delay={0.28} className="p-5">
+                <BlockTitle label="cited this session" title="Evidence" />
+                {evidenceCollected.length === 0 ? (
+                  <p className="py-3 text-center text-xs text-slate-500">Evidence lands here as executives cite it.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {evidenceCollected.map((e) => (
+                      <span key={e} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold text-slate-300">
+                        {e}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </Panel>
+            </>
+          )}
         </div>
       </div>
     </AppShell>

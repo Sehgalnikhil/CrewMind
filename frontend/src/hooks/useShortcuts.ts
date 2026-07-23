@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { navEntryAllowed } from "#/core/permissions/useNav";
 import { NAV_ENTRIES } from "#/lib/navigation";
 import { useUiStore } from "#/stores/uiStore";
 
@@ -27,7 +28,7 @@ export function useShortcuts() {
       if (armed) {
         chordArmed.current = null;
         const entry = NAV_ENTRIES.find((n) => n.chord === e.key.toLowerCase());
-        if (entry) {
+        if (entry && navEntryAllowed(entry)) {
           e.preventDefault();
           navigate(entry.to);
         }

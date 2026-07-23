@@ -4,11 +4,9 @@ import { MoonStar, Sparkles, SunMedium } from "lucide-react";
 import { useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
-import { NAV_ENTRIES } from "#/lib/navigation";
+import { useAllowedNav } from "#/core/permissions/useNav";
 import { useUiStore } from "#/stores/uiStore";
 import { cn } from "#/lib/utils";
-
-const DOCK_ITEMS = NAV_ENTRIES.filter((e) => e.dock);
 
 function DockIcon({
   mouseX,
@@ -64,6 +62,7 @@ export function Dock() {
   const toggleTheme = useUiStore((s) => s.toggleTheme);
   const setAssistantOpen = useUiStore((s) => s.setAssistantOpen);
   const assistantOpen = useUiStore((s) => s.assistantOpen);
+  const dockItems = useAllowedNav().filter((e) => e.dock);
 
   return (
     <motion.nav
@@ -75,7 +74,7 @@ export function Dock() {
       aria-label="Workspace dock"
       className="glass-deep fixed bottom-4 left-1/2 z-40 hidden -translate-x-1/2 items-end gap-2 rounded-3xl px-3 pb-2 pt-2 lg:flex"
     >
-      {DOCK_ITEMS.map((item) => (
+      {dockItems.map((item) => (
         <NavLink key={item.to} to={item.to} end={item.end} aria-label={item.label}>
           {({ isActive }) => (
             <DockIcon mouseX={mouseX} active={isActive} label={item.label}>

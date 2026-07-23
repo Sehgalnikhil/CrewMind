@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { listDocuments } from "#/api/documents";
-import { NAV_ENTRIES } from "#/lib/navigation";
+import { useAllowedNav } from "#/core/permissions/useNav";
 import { AGENTS } from "#/types";
 import { useUiStore } from "#/stores/uiStore";
 import { cn } from "#/lib/utils";
@@ -40,9 +40,10 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const { data: documents } = useQuery({ queryKey: ["documents"], queryFn: listDocuments, enabled: open });
 
   const { recents, bookmarks, theme, toggleTheme, setAssistantOpen } = useUiStore();
+  const allowedNav = useAllowedNav();
 
   const items = useMemo<Item[]>(() => {
-    const nav: Item[] = NAV_ENTRIES.map((e) => ({
+    const nav: Item[] = allowedNav.map((e) => ({
       id: e.to,
       label: e.label,
       hint: e.chord ? `${e.hint} · g ${e.chord}` : e.hint,
@@ -94,7 +95,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       group: "Documents",
     }));
     return [...nav, ...agents, ...docs];
-  }, [documents, theme, toggleTheme, setAssistantOpen, bookmarks, recents]);
+  }, [documents, theme, toggleTheme, setAssistantOpen, bookmarks, recents, allowedNav]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
