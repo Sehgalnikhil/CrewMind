@@ -74,7 +74,7 @@ export function AuthIllustration() {
               <span className="text-xs font-bold text-green-400">+24%</span>
             </div>
             <div>
-              <div className="text-2xl font-bold text-white">Rs 124k</div>
+              <div className="text-2xl font-bold text-white">₹124k</div>
               <div className="text-xs text-gray-400">ARR Runway</div>
             </div>
           </motion.div>

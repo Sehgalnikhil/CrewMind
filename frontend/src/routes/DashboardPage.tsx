@@ -21,8 +21,10 @@ import { Link } from "react-router-dom";
 
 import { listDocuments } from "#/api/documents";
 import { listReports } from "#/api/reports";
-import { getMetrics } from "#/api/metrics";
+import { getMetrics, getDashboardMetrics } from "#/api/metrics";
 import { AppShell } from "#/components/layout/AppShell";
+import { useDashboardSocket } from "#/hooks/useDashboardSocket";
+import { useInsightsStore } from "#/stores/insightsStore";
 import { EmptyState, GlowChip, Panel, ThinkingDots } from "#/components/os/ui";
 import { WidgetFrame } from "#/components/os/WidgetFrame";
 import { useContextMenu } from "#/components/os/ContextMenu";
@@ -125,6 +127,17 @@ export function DashboardPage() {
   const { data: reports } = useQuery({ queryKey: ["reports"], queryFn: listReports });
   const { data: documents } = useQuery({ queryKey: ["documents"], queryFn: listDocuments });
   const { data: metrics } = useQuery({ queryKey: ["metrics"], queryFn: getMetrics });
+  const { data: dashboardMetrics } = useQuery({ queryKey: ["dashboardMetrics"], queryFn: getDashboardMetrics });
+  const setStoreMetrics = useInsightsStore((s) => s.setMetrics);
+
+  useDashboardSocket();
+
+  useEffect(() => {
+    if (dashboardMetrics) {
+      setStoreMetrics(dashboardMetrics);
+    }
+  }, [dashboardMetrics, setStoreMetrics]);
+
   const user = useAuthStore((s) => s.user);
   const openMenu = useContextMenu();
   const latestReport = reports?.[0];
@@ -132,11 +145,11 @@ export function DashboardPage() {
 
   const revSeries = metrics?.revenue_series ?? [0, 0];
   const cashSeries = metrics?.cash_flow_series ?? [0, 0];
-  const currentMrr = `Rs ${revSeries[revSeries.length - 1] ?? 0}K`;
+  const currentMrr = `₹${revSeries[revSeries.length - 1] ?? 0}K`;
 
   const kpis = [
-    { label: "Revenue run-rate", value: metrics?.revenue_run_rate ?? 0, decimals: 2, prefix: "Rs ", suffix: "M", trend: metrics?.revenue_trend ?? "", trendUp: metrics?.revenue_trend_up ?? true, series: revSeries, color: "#8A7BEF" },
-    { label: "Net cash flow", value: metrics?.net_cash_flow ?? 0, prefix: "Rs ", suffix: "K/mo", trend: metrics?.cash_flow_trend ?? "", trendUp: metrics?.cash_flow_trend_up ?? true, series: cashSeries, color: "#0891CF" },
+    { label: "Revenue run-rate", value: metrics?.revenue_run_rate ?? 0, decimals: 2, prefix: "₹", suffix: "L", trend: metrics?.revenue_trend ?? "", trendUp: metrics?.revenue_trend_up ?? true, series: revSeries, color: "#8A7BEF" },
+    { label: "Net cash flow", value: metrics?.net_cash_flow ?? 0, prefix: "₹", suffix: "K/mo", trend: metrics?.cash_flow_trend ?? "", trendUp: metrics?.cash_flow_trend_up ?? true, series: cashSeries, color: "#0891CF" },
     { label: "Open risks", value: latestReport?.risks.length ?? 0, trend: latestReport ? "flagged in latest report" : "run an analysis to populate", trendUp: false, color: "#EC4899" },
     { label: "Opportunities", value: latestReport?.opportunities.length ?? 0, trend: latestReport ? "identified by the crew" : "run an analysis to populate", trendUp: true, color: "#059669" },
   ] as const;

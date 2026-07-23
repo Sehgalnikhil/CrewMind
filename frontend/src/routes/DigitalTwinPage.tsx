@@ -68,7 +68,7 @@ const RISKS = [
 ];
 
 const GOALS = [
-  { name: "Rs 2M ARR run-rate", pct: 73, color: "#8A7BEF" },
+  { name: "₹2L ARR run-rate", pct: 73, color: "#8A7BEF" },
   { name: "Churn below 2.4%", pct: 88, color: "#059669" },
   { name: "12 EU pilot logos", pct: 25, color: "#0891CF" },
   { name: "SOC 2 Type II", pct: 74, color: "#A395F4" },
@@ -227,7 +227,7 @@ export function DigitalTwinPage() {
 
         {/* customers */}
         <Panel delay={0.2} className="p-6">
-          <BlockTitle label="revenue base" title="Customers" action={<GlowChip color="#059669">Rs {totalArr * 10}K ARR</GlowChip>} />
+          <BlockTitle label="revenue base" title="Customers" action={<GlowChip color="#059669">₹{totalArr * 10}K ARR</GlowChip>} />
           <div className="flex flex-col gap-2">
             {CUSTOMERS.map((c, i) => (
               <div key={c.name} className="flex items-center gap-3">

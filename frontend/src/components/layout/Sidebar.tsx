@@ -8,8 +8,9 @@ import { AGENTS } from "#/types";
 
 const GROUPS: { key: string; label: string | null; paths: string[] }[] = [
   { key: "command", label: null, paths: ["/dashboard", "/war-room", "/feed", "/timeline"] },
-  { key: "intelligence", label: "Intelligence", paths: ["/graph", "/twin", "/memory", "/simulator", "/brain"] },
-  { key: "operate", label: "Operate", paths: ["/agents", "/chat", "/documents", "/reports"] },
+  { key: "intelligence", label: "Intelligence", paths: ["/brain-map", "/wiki", "/twin", "/memory", "/simulator", "/brain"] },
+  { key: "operate", label: "Operate", paths: ["/chat", "/documents", "/reports"] },
+  { key: "system", label: "System", paths: ["/notifications", "/organization", "/billing", "/admin", "/profile", "/settings"] },
 ];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {

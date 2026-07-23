@@ -11,10 +11,30 @@ export const queryClient = new QueryClient({
 
 export const api = axios.create({ baseURL: "/api" });
 
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
+let getTokenFn: (() => Promise<string | null>) | null = null;
+
+export function setGetTokenFn(fn: () => Promise<string | null>) {
+  getTokenFn = fn;
+}
+
+api.interceptors.request.use(async (config) => {
+  let token = null;
+  if (getTokenFn) {
+    try {
+      token = await getTokenFn();
+    } catch (e) {
+      console.error("Failed to fetch Clerk token", e);
+    }
+  } else {
+    token = useAuthStore.getState().token;
+  }
+
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    if (config.headers && typeof config.headers.set === 'function') {
+      config.headers.set("Authorization", `Bearer ${token}`);
+    } else {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });

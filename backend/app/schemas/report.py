@@ -17,8 +17,9 @@ class ReportResponse(BaseModel):
 
 class AgentRunResponse(BaseModel):
     id: str
-    status: str
+    workspace_id: str
     trigger: str
+    status: str
     error_message: str | None
     created_at: datetime
 

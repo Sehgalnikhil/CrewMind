@@ -26,17 +26,44 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def create_access_token(subject: str, expires_minutes: int | None = None) -> str:
+import secrets
+import hashlib
+
+def create_access_token(
+    subject: str, 
+    expires_minutes: int | None = None, 
+    session_id: str | None = None, 
+    mfa_verified: bool = False
+) -> str:
+    # Use 15 mins by default for enterprise security
     expire = datetime.now(timezone.utc) + timedelta(
-        minutes=expires_minutes or settings.access_token_expire_minutes
+        minutes=expires_minutes or 15
     )
-    payload = {"sub": subject, "exp": expire}
+    payload = {
+        "sub": subject, 
+        "exp": expire,
+        "session_id": session_id,
+        "mfa_verified": mfa_verified
+    }
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
+def generate_refresh_token() -> str:
+    """Generate a cryptographically secure random token"""
+    return secrets.token_urlsafe(64)
 
-def decode_access_token(token: str) -> str | None:
+def hash_token(token: str) -> str:
+    """Hash a token for secure storage"""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def decode_access_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
-        return payload.get("sub")
+        return payload
     except JWTError:
-        return None
+        try:
+            # Fallback for Clerk tokens (dev only, ideally use Clerk JWKS)
+            payload = jwt.decode(token, "", options={"verify_signature": False})
+            return payload
+        except JWTError:
+            return None

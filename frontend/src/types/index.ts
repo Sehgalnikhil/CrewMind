@@ -119,14 +119,95 @@ export type AgentRunStatus =
   | "completed"
   | "failed";
 
+export interface ReasoningStep {
+  agent: CrewAgentKey;
+  monologue: string[];
+  critic: string | null;
+  confidence: number;
+}
+
+export type WsMessage =
+  | { type: "run_status"; status: AgentRunStatus }
+  | { type: "agent_status"; agent_key: AgentKey; status: "running" | "done" }
+  | { type: "reasoning_step"; agent: CrewAgentKey; monologue: string[]; critic: string | null; confidence: number }
+  | { type: "completed"; report_id: string }
+  | { type: "failed"; message: string }
+  | { type: "agent_message"; id: string; sender: AgentKey; receiver: AgentKey; intent: string; content: string; confidence: number; priority: number; evidence: string[]; thread_id: string; timestamp: string }
+  | { type: "dashboard_metrics"; metrics: any };
+
 export interface AgentRun {
   id: string;
-  status: AgentRunStatus;
+  status: "pending" | "researching" | "analyzing" | "synthesizing" | "completed" | "failed";
   trigger: string;
   error_message: string | null;
   created_at: string;
 }
 
+export interface AgentState {
+  id: string;
+  agent_key: AgentKey;
+  goals: string[];
+  observations: string[];
+  confidence: number;
+  personality: Record<string, any>;
+  reasoning_history: any[];
+  last_active_at: string;
+  created_at: string;
+}
+
+export interface AgentTask {
+  id: string;
+  agent_key: AgentKey;
+  title: string;
+  description: string;
+  status: "queued" | "running" | "completed" | "failed" | "cancelled";
+  priority: number;
+  source: string;
+  due_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  result_json: string | null;
+  parent_task_id: string | null;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface TaskQueueStats {
+  queued: number;
+  running: number;
+  completed: number;
+  failed: number;
+  total: number;
+}
+
+export interface AgentMessage {
+  id: string;
+  sender: AgentKey;
+  receiver: AgentKey;
+  intent: string;
+  content: string;
+  confidence: number;
+  priority: number;
+  evidence: string[];
+  thread_id: string | null;
+  execution_id: string | null;
+  result_json: string | null;
+  created_at: string;
+}
+
+export interface MemoryRecord {
+  id: string;
+  agent_source: AgentKey;
+  kind: string;
+  content: string;
+  title: string;
+  tier: "working" | "short_term" | "long_term" | "semantic" | "executive";
+  importance: number;
+  linked_memory_ids: string[];
+  access_count: number;
+  expires_at: string | null;
+  created_at: string;
+}
 export interface Report {
   id: string;
   agent_run_id: string;

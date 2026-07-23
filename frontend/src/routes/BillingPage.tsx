@@ -1,8 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Check, Download } from "lucide-react";
+import { useRazorpay } from "react-razorpay";
 
 import { listDocuments } from "#/api/documents";
+import { createSubscription, verifyPayment } from "#/api/billing";
 import { AppShell } from "#/components/layout/AppShell";
 import { BlockTitle, GlowChip, Panel } from "#/components/os/ui";
 import { PageHero, MeterBar } from "#/components/system/shared";
@@ -10,25 +12,60 @@ import { AGENTS } from "#/types";
 import { cn } from "#/lib/utils";
 
 const PLANS = [
-  { name: "Founder", price: "Rs 4,900", per: "/mo", features: ["2 executives", "100 documents", "Weekly analysis", "Email support"], current: false },
-  { name: "Boardroom", price: "Rs 14,900", per: "/mo", features: ["All 5 executives + Nexus", "Unlimited documents", "War Room & Simulator", "Live executive feed", "Priority support"], current: true },
+  { name: "Founder", price: "₹4,900", per: "/mo", features: ["2 executives", "100 documents", "Weekly analysis", "Email support"], current: false },
+  { name: "Boardroom", price: "₹14,900", per: "/mo", features: ["All 5 executives + Nexus", "Unlimited documents", "War Room & Simulator", "Live executive feed", "Priority support"], current: true },
   { name: "Enterprise", price: "Custom", per: "", features: ["Dedicated model capacity", "SSO & audit exports", "Custom executives", "White-glove onboarding"], current: false },
 ];
 
 const INVOICES = [
-  { date: "Jul 1, 2026", amount: "Rs 14,900", status: "paid" },
-  { date: "Jun 1, 2026", amount: "Rs 14,900", status: "paid" },
-  { date: "May 1, 2026", amount: "Rs 14,900", status: "paid" },
-  { date: "Apr 1, 2026", amount: "Rs 14,900", status: "paid" },
-  { date: "Mar 1, 2026", amount: "Rs 9,900", status: "paid" },
-  { date: "Feb 1, 2026", amount: "Rs 9,900", status: "paid" },
-  { date: "Jan 1, 2026", amount: "Rs 9,900", status: "paid" },
-  { date: "Dec 1, 2025", amount: "Rs 4,900", status: "paid" },
+  { date: "Jul 1, 2026", amount: "₹14,900", status: "paid" },
+  { date: "Jun 1, 2026", amount: "₹14,900", status: "paid" },
+  { date: "May 1, 2026", amount: "₹14,900", status: "paid" },
+  { date: "Apr 1, 2026", amount: "₹14,900", status: "paid" },
+  { date: "Mar 1, 2026", amount: "₹9,900", status: "paid" },
+  { date: "Feb 1, 2026", amount: "₹9,900", status: "paid" },
+  { date: "Jan 1, 2026", amount: "₹9,900", status: "paid" },
+  { date: "Dec 1, 2025", amount: "₹4,900", status: "paid" },
 ];
 
 export function BillingPage() {
   const { data: documents } = useQuery({ queryKey: ["documents"], queryFn: listDocuments });
   const docCount = documents?.length ?? 0;
+  
+  const { Razorpay } = useRazorpay();
+
+  const { mutate: subscribe, isPending } = useMutation({
+    mutationFn: async (planName: string) => {
+      if (planName === "Enterprise") return; // Open modal or mailto
+      
+      const { subscription_id, key_id } = await createSubscription({ plan_name: planName });
+      
+      const options = {
+        key: key_id,
+        subscription_id: subscription_id,
+        name: "CrewMind",
+        description: `${planName} Plan`,
+        handler: async (response: any) => {
+          await verifyPayment({
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_subscription_id: response.razorpay_subscription_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+          alert("Subscription successful!");
+        },
+        theme: {
+          color: "#8A7BEF",
+        },
+      };
+
+      const rzp = new Razorpay(options as any);
+      rzp.open();
+    },
+  });
+
+  const handleSubscribe = (planName: string) => {
+    subscribe(planName);
+  };
 
   const usage = [
     { label: "AI analyses", used: 34, limit: 100, color: "#8A7BEF" },
@@ -55,7 +92,7 @@ export function BillingPage() {
             <GlowChip color="#059669">active</GlowChip>
           </div>
           <p className="mt-1 text-sm text-slate-400">
-            Rs 14,900<span className="text-slate-500">/mo · renews Aug 1, 2026</span>
+            ₹14,900<span className="text-slate-500">/mo · renews Aug 1, 2026</span>
           </p>
           <div className="mt-4 flex items-center gap-1.5">
             {AGENTS.map((a) => (
@@ -121,8 +158,12 @@ export function BillingPage() {
               ))}
             </ul>
             {!p.current && (
-              <button className="mt-5 w-full rounded-2xl border border-white/12 bg-white/[0.05] py-2.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:border-crew-500/40">
-                {p.name === "Enterprise" ? "Talk to us" : "Switch plan"}
+              <button 
+                onClick={() => handleSubscribe(p.name)}
+                disabled={isPending}
+                className="mt-5 w-full rounded-2xl border border-white/12 bg-white/[0.05] py-2.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:border-crew-500/40 disabled:opacity-50"
+              >
+                {p.name === "Enterprise" ? "Talk to us" : (isPending ? "Processing..." : "Switch plan")}
               </button>
             )}
           </Panel>

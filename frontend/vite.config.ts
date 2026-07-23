@@ -19,4 +19,7 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    include: ["lucide-react", "react-razorpay", "@clerk/react", "framer-motion", "@monaco-editor/react", "recharts", "three"],
+  },
 });

@@ -46,7 +46,7 @@ function HoloDashboard() {
           <div className="flex items-baseline justify-between">
             <div>
               <p className="text-[11px] font-medium text-slate-400">Annual recurring revenue</p>
-              <p className="mt-0.5 text-2xl font-bold text-white">Rs 12.1M</p>
+              <p className="mt-0.5 text-2xl font-bold text-white">₹12.1L</p>
             </div>
             <span className="flex items-center gap-1 text-xs font-semibold text-emerald-400">
               <TrendingUp className="h-3.5 w-3.5" /> +38%

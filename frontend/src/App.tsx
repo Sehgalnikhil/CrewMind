@@ -1,13 +1,11 @@
 import { Suspense, lazy } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { SignIn, SignUp } from "@clerk/react";
 
 import { RequireAuth } from "#/components/RequireAuth";
 import { OrbitalLoader } from "#/components/os/ui";
 import { LandingPage } from "#/routes/LandingPage";
-import { LoginPage } from "#/routes/LoginPage";
-import { RegisterPage } from "#/routes/RegisterPage";
-import { ForgotPasswordPage } from "#/routes/ForgotPasswordPage";
 
 /* Each workspace is its own chunk — the OS boots fast and streams the rest. */
 function lazyPage<K extends string>(loader: () => Promise<Record<K, ComponentType>>, name: K) {
@@ -23,6 +21,9 @@ const DigitalTwinPage = lazyPage(() => import("#/routes/DigitalTwinPage"), "Digi
 const MemoryPage = lazyPage(() => import("#/routes/MemoryPage"), "MemoryPage");
 const SimulatorPage = lazyPage(() => import("#/routes/SimulatorPage"), "SimulatorPage");
 const BrainPage = lazyPage(() => import("#/routes/BrainPage"), "BrainPage");
+const BrainMapPage = lazyPage(() => import("#/routes/BrainMapPage"), "default");
+const WikiPage = lazyPage(() => import("#/routes/WikiPage"), "default");
+
 const AgentPanelPage = lazyPage(() => import("#/routes/AgentPanelPage"), "AgentPanelPage");
 const AgentDetailPage = lazyPage(() => import("#/routes/AgentDetailPage"), "AgentDetailPage");
 const ChatPage = lazyPage(() => import("#/routes/ChatPage"), "ChatPage");
@@ -54,11 +55,11 @@ function guard(node: ReactNode) {
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/login/*" element={<div className="world flex h-screen items-center justify-center bg-[#05060C]"><SignIn routing="path" path="/login" /></div>} />
+      <Route path="/register/*" element={<div className="world flex h-screen items-center justify-center bg-[#05060C]"><SignUp routing="path" path="/register" /></div>} />
 
       <Route path="/dashboard" element={guard(<DashboardPage />)} />
+
       <Route path="/war-room" element={guard(<WarRoomPage />)} />
       <Route path="/feed" element={guard(<FeedPage />)} />
       <Route path="/timeline" element={guard(<TimelinePage />)} />
@@ -68,6 +69,8 @@ export default function App() {
       <Route path="/memory" element={guard(<MemoryPage />)} />
       <Route path="/simulator" element={guard(<SimulatorPage />)} />
       <Route path="/brain" element={guard(<BrainPage />)} />
+      <Route path="/brain-map" element={guard(<BrainMapPage />)} />
+      <Route path="/wiki" element={guard(<WikiPage />)} />
 
       <Route path="/agents" element={guard(<AgentPanelPage />)} />
       <Route path="/agents/:key" element={guard(<AgentDetailPage />)} />

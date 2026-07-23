@@ -15,6 +15,7 @@ class LoginRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
 
 
@@ -22,5 +23,5 @@ class UserResponse(BaseModel):
     id: str
     email: str
     full_name: str
-    org_id: str
-    org_name: str
+    workspace_id: str
+    workspace_name: str

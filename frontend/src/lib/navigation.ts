@@ -17,7 +17,6 @@ import {
   Sparkles,
   Swords,
   User,
-  Zap,
 } from "lucide-react";
 
 export interface NavEntry {
@@ -44,13 +43,14 @@ export const NAV_ENTRIES: NavEntry[] = [
   { to: "/feed", label: "Executive Feed", hint: "What the crew is thinking, live", icon: Rss, group: "Command", chord: "f" },
   { to: "/timeline", label: "Timeline", hint: "Every decision on one axis", icon: Activity, group: "Command", chord: "l" },
 
-  { to: "/graph", label: "Knowledge Graph", hint: "Everything your company knows, connected", icon: Network, group: "Intelligence", dock: true, chord: "g" },
+  { to: "/brain-map", label: "Knowledge Graph", hint: "Everything your company knows, connected", icon: Network, group: "Intelligence", dock: true, chord: "g" },
+  { to: "/wiki", label: "Corporate Wiki", hint: "Auto-generated topics from organizational memory", icon: FileText, group: "Intelligence", dock: true, chord: "k" },
   { to: "/twin", label: "Digital Twin", hint: "A living map of the organization", icon: Radar, group: "Intelligence", chord: "t" },
   { to: "/memory", label: "Executive Memory", hint: "Search all organizational memory", icon: BrainCircuit, group: "Intelligence", chord: "m" },
   { to: "/simulator", label: "Scenario Simulator", hint: "Stress-test decisions before making them", icon: FlaskConical, group: "Intelligence", chord: "s" },
   { to: "/brain", label: "AI Brain", hint: "Inside the mind of the crew", icon: BrainCircuit, group: "Intelligence", chord: "b" },
 
-  { to: "/agents", label: "AI Workspace", hint: "Run a full crew analysis", icon: Zap, group: "Operate", dock: true, end: true, chord: "a" },
+
   { to: "/chat", label: "Boardroom Chat", hint: "Talk to your executives", icon: MessageSquare, group: "Operate", dock: true, chord: "c" },
   { to: "/documents", label: "Documents", hint: "Upload & manage knowledge", icon: FileText, group: "Operate", dock: true, chord: "u" },
   { to: "/reports", label: "Reports", hint: "Signed crew verdicts", icon: Sparkles, group: "Operate", chord: "r" },

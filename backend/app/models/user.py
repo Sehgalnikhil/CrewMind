@@ -7,7 +7,7 @@ from app.core.database import Base
 from app.models.mixins import IdMixin, TimestampMixin
 
 if TYPE_CHECKING:
-    from app.models.organization import Organization
+    from app.models.rbac import OrganizationMember
 
 
 class User(Base, IdMixin, TimestampMixin):
@@ -17,6 +17,6 @@ class User(Base, IdMixin, TimestampMixin):
     hashed_password: Mapped[str] = mapped_column(String(255))
     full_name: Mapped[str] = mapped_column(String(255))
 
-    organizations: Mapped[list["Organization"]] = relationship(
-        back_populates="owner", cascade="all, delete-orphan"
+    memberships: Mapped[list["OrganizationMember"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )

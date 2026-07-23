@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from "react";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/react";
 import { motion, useScroll, useSpring } from "framer-motion";
 import { Hero } from "#/components/world/Hero";
 import { DashboardSection } from "#/components/world/DashboardSection";
@@ -64,15 +65,21 @@ function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <a href="/login" className="hidden text-sm font-semibold text-slate-300 transition-colors hover:text-white sm:block">
-            Log in
-          </a>
-          <a
-            href="/register"
-            className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-black shadow-[0_0_30px_-8px_rgba(138,123,239,0.6)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_40px_-6px_rgba(138,123,239,0.9)]"
-          >
-            Get started
-          </a>
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button className="hidden text-sm font-semibold text-slate-300 transition-colors hover:text-white sm:block">
+                Log in
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-black shadow-[0_0_30px_-8px_rgba(138,123,239,0.6)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_40px_-6px_rgba(138,123,239,0.9)]">
+                Get started
+              </button>
+            </SignUpButton>
+          </Show>
+          <Show when="signed-in">
+            <UserButton />
+          </Show>
         </div>
       </div>
     </motion.header>

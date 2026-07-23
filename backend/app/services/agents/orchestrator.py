@@ -33,13 +33,13 @@ RESEARCH_TASK_PROMPT = (
 )
 
 
-async def _run_agent(agent_key: str, db, org_id: str, extra_context: str = "") -> str:
+async def _run_agent(agent_key: str, db, workspace_id: str, extra_context: str = "", execution_id: str | None = None) -> str:
     agent = AGENT_REGISTRY[agent_key]
     prompt = RESEARCH_TASK_PROMPT if agent_key == "research" else STANDARD_TASK_PROMPT
-    return await agent.run(db, org_id, message=prompt, extra_context=extra_context)
+    return await agent.run(db, workspace_id, message=prompt, extra_context=extra_context, execution_id=execution_id)
 
 
-async def run_analysis(agent_run_id: str, org_id: str) -> None:
+async def run_analysis(agent_run_id: str, workspace_id: str) -> None:
     async def emit(event: dict) -> None:
         await publish(agent_run_id, event)
 
@@ -57,11 +57,11 @@ async def run_analysis(agent_run_id: str, org_id: str) -> None:
             await emit({"type": "agent_status", "agent_key": "research", "status": "running"})
 
         async with AsyncSessionLocal() as db:
-            research_output = await _run_agent("research", db, org_id)
+            research_output = await _run_agent("research", db, workspace_id, execution_id=agent_run_id)
 
         async with AsyncSessionLocal() as db:
             db.add(AgentRunOutput(agent_run_id=agent_run_id, agent_key="research", output_json=json.dumps(research_output)))
-            await write_memory(db, org_id, "research", "finding", research_output)
+            await write_memory(db, workspace_id, "research", "finding", research_output)
             await emit({"type": "agent_status", "agent_key": "research", "status": "done"})
 
         # --- Step 2: Domain agents, in parallel ---
@@ -72,14 +72,14 @@ async def run_analysis(agent_run_id: str, org_id: str) -> None:
 
         async def run_and_record(key: str) -> tuple[str, str]:
             async with AsyncSessionLocal() as read_db:
-                output = await _run_agent(key, read_db, org_id, extra_context=research_output)
+                output = await _run_agent(key, read_db, workspace_id, extra_context=research_output, execution_id=agent_run_id)
             async with AsyncSessionLocal() as db:
                 db.add(
                     AgentRunOutput(
                         agent_run_id=agent_run_id, agent_key=key, output_json=json.dumps(output)
                     )
                 )
-                await write_memory(db, org_id, key, "finding", output)
+                await write_memory(db, workspace_id, key, "finding", output)
             await emit({"type": "agent_status", "agent_key": key, "status": "done"})
             return key, output
 
@@ -95,7 +95,7 @@ async def run_analysis(agent_run_id: str, org_id: str) -> None:
 
         async with AsyncSessionLocal() as db:
             report = Report(
-                org_id=org_id,
+                workspace_id=workspace_id,
                 agent_run_id=agent_run_id,
                 business_health_score=report_data["business_health_score"],
                 summary=report_data["summary"],

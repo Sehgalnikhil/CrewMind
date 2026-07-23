@@ -13,7 +13,7 @@ logger = logging.getLogger("crewmind.ingest")
 SUPPORTED_TYPES = {"pdf", "docx", "pptx", "xlsx", "csv"}
 
 
-async def ingest_document(db: AsyncSession, document: Document, org_id: str) -> None:
+async def ingest_document(db: AsyncSession, document: Document, workspace_id: str) -> None:
     """Parse, chunk, and index a document. Mutates and persists its status."""
     document.status = "parsing"
     await db.commit()
@@ -32,10 +32,13 @@ async def ingest_document(db: AsyncSession, document: Document, org_id: str) -> 
         await db.flush()
 
         add_chunks(
-            org_id=org_id,
+            workspace_id=workspace_id,
             document_id=document.id,
             chunk_ids=[row.id for row in chunk_rows],
             texts=chunks,
+            uploaded_by=document.uploaded_by,
+            created_at_iso=document.created_at.isoformat() if document.created_at else None,
+            document_type=document.file_type
         )
 
         document.status = "indexed"

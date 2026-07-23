@@ -9,34 +9,70 @@ from app.core.database import AsyncSessionLocal
 from app.core.security import decode_access_token
 from app.models.agent_run import AgentRun
 from app.models.conversation import Conversation, Message
-from app.models.organization import Organization
+from app.models.rbac import OrganizationMember
 from app.models.user import User
 from app.services.agents import AGENT_REGISTRY, DOMAIN_AGENT_KEYS
 from app.services.agents.coordinator import synthesize_chat_reply
 from app.services.agents.progress_bus import subscribe, unsubscribe
-from app.services.llm.gemini_client import LLMNotConfiguredError
+from app.services.llm.gemini_client import LLMNotConfiguredError, LLMRateLimitError
 
 logger = logging.getLogger("crewmind.ws")
 router = APIRouter()
 
 ALL_CREW_KEYS = ["research", *DOMAIN_AGENT_KEYS]
 
+class DashboardConnectionManager:
+    def __init__(self):
+        self.active_connections: dict[str, list[WebSocket]] = {}
 
-async def _authenticate(token: str | None) -> tuple[User, Organization] | None:
+    async def connect(self, workspace_id: str, websocket: WebSocket):
+        await websocket.accept()
+        if workspace_id not in self.active_connections:
+            self.active_connections[workspace_id] = []
+        self.active_connections[workspace_id].append(websocket)
+
+    def disconnect(self, workspace_id: str, websocket: WebSocket):
+        if workspace_id in self.active_connections:
+            self.active_connections[workspace_id].remove(websocket)
+            if not self.active_connections[workspace_id]:
+                del self.active_connections[workspace_id]
+
+    async def broadcast(self, workspace_id: str, message: dict):
+        if workspace_id in self.active_connections:
+            # Create a copy of the list to safely iterate over it
+            for connection in list(self.active_connections[workspace_id]):
+                try:
+                    await connection.send_json(message)
+                except Exception:
+                    # Ignore errors, as they're typically just closed connections
+                    pass
+
+ws_manager = DashboardConnectionManager()
+
+
+async def _authenticate(token: str | None) -> tuple[User, str] | None:
+    """Returns User, workspace_id."""
     if token is None:
         return None
-    user_id = decode_access_token(token)
+    payload = decode_access_token(token)
+    if payload is None:
+        return None
+    user_id = payload.get("sub")
     if user_id is None:
         return None
     async with AsyncSessionLocal() as db:
         user = await db.get(User, user_id)
         if user is None:
             return None
-        result = await db.execute(select(Organization).where(Organization.owner_id == user.id))
-        org = result.scalar_one_or_none()
-        if org is None:
+        result = await db.execute(
+            select(OrganizationMember)
+            .where(OrganizationMember.user_id == user.id)
+            .limit(1)
+        )
+        member = result.scalar_one_or_none()
+        if member is None:
             return None
-        return user, org
+        return user, member.workspace_id
 
 
 async def _persist_agent_message(conversation_id: str, agent_key: str, content: str) -> Message:
@@ -51,7 +87,7 @@ async def _persist_agent_message(conversation_id: str, agent_key: str, content: 
 
 
 async def _send_single_agent_reply(
-    websocket: WebSocket, conversation_id: str, org_id: str, agent_key: str, content: str
+    websocket: WebSocket, conversation_id: str, workspace_id: str, agent_key: str, content: str
 ) -> None:
     agent = AGENT_REGISTRY[agent_key]
     await websocket.send_json({"type": "start", "agent_key": agent_key})
@@ -59,10 +95,10 @@ async def _send_single_agent_reply(
     full_text = ""
     async with AsyncSessionLocal() as db:
         try:
-            async for delta in agent.stream(db, org_id, content):
+            async for delta in agent.stream(db, workspace_id, content):
                 full_text += delta
                 await websocket.send_json({"type": "delta", "content": delta})
-        except LLMNotConfiguredError as exc:
+        except (LLMNotConfiguredError, LLMRateLimitError) as exc:
             await websocket.send_json({"type": "error", "message": str(exc)})
             raise
         except Exception:  # noqa: BLE001
@@ -74,19 +110,17 @@ async def _send_single_agent_reply(
     await websocket.send_json({"type": "done", "message_id": message.id})
 
 
-async def _send_crew_reply(websocket: WebSocket, conversation_id: str, org_id: str, content: str) -> None:
+async def _send_crew_reply(websocket: WebSocket, conversation_id: str, workspace_id: str, content: str) -> None:
     """Fans the question out to all 5 agents concurrently, then has the
-    Coordinator merge their answers into one collective reply. Each agent's
-    individual answer is persisted and surfaced too, so the user can see the
-    crew actually discussing it rather than a single opaque blended answer."""
+    Coordinator merge their answers into one collective reply."""
 
     async def run_one(key: str) -> tuple[str, str] | None:
         agent = AGENT_REGISTRY[key]
         await websocket.send_json({"type": "start", "agent_key": key})
         try:
             async with AsyncSessionLocal() as db:
-                text = await agent.run(db, org_id, content)
-        except LLMNotConfiguredError as exc:
+                text = await agent.run(db, workspace_id, content)
+        except (LLMNotConfiguredError, LLMRateLimitError) as exc:
             await websocket.send_json({"type": "error", "message": str(exc)})
             return None
         except Exception:  # noqa: BLE001
@@ -109,7 +143,7 @@ async def _send_crew_reply(websocket: WebSocket, conversation_id: str, org_id: s
     await websocket.send_json({"type": "start", "agent_key": "coordinator"})
     try:
         combined = await synthesize_chat_reply(agent_outputs, content)
-    except LLMNotConfiguredError as exc:
+    except (LLMNotConfiguredError, LLMRateLimitError) as exc:
         await websocket.send_json({"type": "error", "message": str(exc)})
         return
     except Exception:  # noqa: BLE001
@@ -131,11 +165,11 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str, token: str 
         await websocket.send_json({"type": "error", "message": "Authentication failed."})
         await websocket.close()
         return
-    _user, org = auth
+    _user, workspace_id = auth
 
     async with AsyncSessionLocal() as db:
         conversation = await db.get(Conversation, conversation_id)
-        if conversation is None or conversation.org_id != org.id:
+        if conversation is None or conversation.workspace_id != workspace_id:
             await websocket.send_json({"type": "error", "message": "Conversation not found."})
             await websocket.close()
             return
@@ -169,9 +203,9 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str, token: str 
                 await db.commit()
 
             if mode == "single_agent":
-                await _send_single_agent_reply(websocket, conversation_id, org.id, agent_key, content)
+                await _send_single_agent_reply(websocket, conversation_id, workspace_id, agent_key, content)
             else:
-                await _send_crew_reply(websocket, conversation_id, org.id, content)
+                await _send_crew_reply(websocket, conversation_id, workspace_id, content)
     except WebSocketDisconnect:
         pass
 
@@ -185,11 +219,11 @@ async def agent_run_progress_websocket(websocket: WebSocket, run_id: str, token:
         await websocket.send_json({"type": "error", "message": "Authentication failed."})
         await websocket.close()
         return
-    _user, org = auth
+    _user, workspace_id = auth
 
     async with AsyncSessionLocal() as db:
         run = await db.get(AgentRun, run_id)
-        if run is None or run.org_id != org.id:
+        if run is None or run.workspace_id != workspace_id:
             await websocket.send_json({"type": "error", "message": "Run not found."})
             await websocket.close()
             return
@@ -211,3 +245,22 @@ async def agent_run_progress_websocket(websocket: WebSocket, run_id: str, token:
         pass
     finally:
         unsubscribe(run_id, queue)
+
+
+@router.websocket("/ws/dashboard")
+async def dashboard_websocket(websocket: WebSocket, token: str | None = None) -> None:
+    auth = await _authenticate(token)
+    if auth is None:
+        await websocket.accept()
+        await websocket.send_json({"type": "error", "message": "Authentication failed."})
+        await websocket.close()
+        return
+    _user, workspace_id = auth
+
+    await ws_manager.connect(workspace_id, websocket)
+    try:
+        while True:
+            # Just keep the connection open, waiting for broadcasts
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(workspace_id, websocket)

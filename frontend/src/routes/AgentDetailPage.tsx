@@ -19,6 +19,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 
 import { listDocuments } from "#/api/documents";
 import { listReports } from "#/api/reports";
+import { getAgentState, getAgentTaskStats } from "#/api/agents";
 import { AppShell } from "#/components/layout/AppShell";
 import { BlockTitle, EmptyState, GlowChip, Panel, ThinkingDots } from "#/components/os/ui";
 import { CountUp } from "#/components/world/primitives";
@@ -49,13 +50,7 @@ const CONFIDENCE: Record<AgentKey, number> = {
   research: 91,
 };
 
-const WEEK_ACTIVITY: Record<AgentKey, number[]> = {
-  strategy: [40, 62, 55, 78, 66, 88, 72],
-  finance: [70, 64, 82, 76, 90, 68, 84],
-  operations: [52, 70, 61, 84, 74, 66, 80],
-  legal: [30, 48, 76, 58, 64, 42, 70],
-  research: [82, 74, 90, 68, 86, 92, 78],
-};
+
 
 /** What this agent contributes to a report — pulled from the real latest report. */
 function agentFindings(agent: AgentMeta, report: Report | undefined) {
@@ -112,6 +107,18 @@ export function AgentDetailPage() {
   const agent = AGENTS.find((a) => a.key === key);
   const { data: reports } = useQuery({ queryKey: ["reports"], queryFn: listReports });
   const { data: documents } = useQuery({ queryKey: ["documents"], queryFn: listDocuments });
+  
+  const { data: state } = useQuery({ 
+    queryKey: ["agentState", key], 
+    queryFn: () => getAgentState(key!),
+    enabled: !!key
+  });
+
+  const { data: taskStats } = useQuery({
+    queryKey: ["agentTaskStats", key],
+    queryFn: () => getAgentTaskStats(key!),
+    enabled: !!key
+  });
 
   if (!agent) return <Navigate to="/agents" replace />;
 
@@ -119,8 +126,9 @@ export function AgentDetailPage() {
   const findings = agentFindings(agent, latestReport) ?? [];
   const indexed = (documents ?? []).filter((d) => d.status === "indexed");
   const colleagues = AGENTS.filter((a) => a.key !== agent.key);
-  const confidence = CONFIDENCE[agent.key];
-  const bars = WEEK_ACTIVITY[agent.key];
+  const confidence = state?.confidence ?? CONFIDENCE[agent.key];
+  
+  const activeGoals = state?.goals ?? [];
 
   return (
     <AppShell title={`${agent.persona} · ${agent.name} Agent`}>
@@ -212,20 +220,27 @@ export function AgentDetailPage() {
             </div>
             {/* activity chart */}
             <div className="mt-5">
-              <p className="mb-2 text-[11px] font-semibold text-slate-400">Analyses this week</p>
-              <div className="flex h-24 items-end gap-3" role="img" aria-label={`${agent.persona}'s analysis activity across the last seven days`}>
-                {bars.map((v, i) => (
-                  <div key={i} className="group flex h-full w-full flex-col items-center justify-end gap-1.5">
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${v}%` }}
-                      transition={{ duration: 0.7, delay: 0.3 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
-                      className="w-full max-w-[38px] rounded-t-md transition-opacity group-hover:opacity-100"
-                      style={{ background: `linear-gradient(180deg, ${agent.color}cc, ${agent.color}33)`, opacity: 0.8 }}
-                    />
-                    <span className="text-[9px] font-medium text-slate-600">{["M", "T", "W", "T", "F", "S", "S"][i]}</span>
-                  </div>
-                ))}
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] font-semibold text-slate-400">Current Task Queue</p>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-2">
+                <div className="rounded-xl bg-white/[0.03] p-3 border border-white/[0.05]">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Queued</p>
+                  <p className="text-xl font-bold text-white">{taskStats?.queued ?? 0}</p>
+                </div>
+                <div className="rounded-xl bg-white/[0.03] p-3 border border-white/[0.05]">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Running</p>
+                  <p className="text-xl font-bold text-crew-300">{taskStats?.running ?? 0}</p>
+                </div>
+                <div className="rounded-xl bg-white/[0.03] p-3 border border-white/[0.05]">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Completed</p>
+                  <p className="text-xl font-bold text-emerald-400">{taskStats?.completed ?? 0}</p>
+                </div>
+                <div className="rounded-xl bg-white/[0.03] p-3 border border-white/[0.05]">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Failed</p>
+                  <p className="text-xl font-bold text-rose-400">{taskStats?.failed ?? 0}</p>
+                </div>
               </div>
             </div>
           </Panel>
@@ -375,7 +390,29 @@ export function AgentDetailPage() {
 
           {/* mandate */}
           <Panel delay={0.3} hover className="holo-sheen p-6">
-            <BlockTitle label="mandate" title="What I own" />
+            <BlockTitle label="state" title="Current Goals & Focus" />
+            
+            {activeGoals.length > 0 && (
+              <div className="mb-4 space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Active Goals</p>
+                <ul className="space-y-2">
+                  {activeGoals.map((g, i) => (
+                    <motion.li
+                      key={i}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.35 + i * 0.06 }}
+                      className="flex gap-2.5 text-[13px] text-slate-200 bg-white/[0.04] border border-white/[0.05] p-2.5 rounded-lg"
+                    >
+                      <Target className="h-4 w-4 shrink-0 mt-0.5" style={{ color: agent.color }} />
+                      <span className="leading-snug">{g}</span>
+                    </motion.li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 mt-4">Core Mandate</p>
             <ul className="space-y-2">
               {agent.focus.map((f, i) => (
                 <motion.li
@@ -383,7 +420,7 @@ export function AgentDetailPage() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.35 + i * 0.06 }}
-                  className="flex items-center gap-2.5 text-[13px] text-slate-300"
+                  className="flex items-center gap-2.5 text-[13px] text-slate-400"
                 >
                   <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: agent.color }} />
                   {f}

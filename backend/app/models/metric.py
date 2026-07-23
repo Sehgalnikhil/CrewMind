@@ -8,7 +8,7 @@ from app.models.mixins import IdMixin, TimestampMixin
 class OrganizationMetric(Base, IdMixin, TimestampMixin):
     __tablename__ = "organization_metrics"
 
-    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True, unique=True)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, unique=True)
     
     revenue_run_rate: Mapped[float] = mapped_column(default=0.0)
     revenue_trend: Mapped[str] = mapped_column(String(255), default="")

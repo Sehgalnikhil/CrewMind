@@ -109,7 +109,7 @@ const SIMULATED: FeedItem[] = [
     icon: "billing",
     color: "#D97706",
     title: "Invoice paid",
-    body: "Boardroom plan · Rs 24,900 settled via card ending 4421.",
+    body: "Boardroom plan · ₹24,900 settled via card ending 4421.",
     at: min(22 * 60),
     to: "/billing",
   },

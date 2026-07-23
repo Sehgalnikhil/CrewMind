@@ -7,6 +7,7 @@ import { GlowChip } from "#/components/os/ui";
 import { MeterBar } from "#/components/system/shared";
 import { CountUp } from "#/components/world/primitives";
 import { AGENTS } from "#/types";
+import { useInsightsStore } from "#/stores/insightsStore";
 
 /* ---------- Risk Radar ---------- */
 const RISK_AXES = [
@@ -18,13 +19,21 @@ const RISK_AXES = [
 ];
 
 export function RiskRadarWidget() {
+  const metrics = useInsightsStore((s) => s.metrics);
+  const failed_penalty = Math.min(1, (metrics?.failed_tasks || 0) * 0.1); // up to +0.1 per task
+  
+  const current_axes = RISK_AXES.map(a => ({
+    ...a,
+    v: Math.min(1, a.v + (a.label === 'Ops' ? failed_penalty : 0))
+  }));
+
   const pts = (scale: number) =>
-    RISK_AXES.map((_, i) => {
-      const ang = (i / RISK_AXES.length) * Math.PI * 2 - Math.PI / 2;
+    current_axes.map((_, i) => {
+      const ang = (i / current_axes.length) * Math.PI * 2 - Math.PI / 2;
       return `${60 + Math.cos(ang) * 48 * scale},${60 + Math.sin(ang) * 48 * scale}`;
     }).join(" ");
-  const shape = RISK_AXES.map((a, i) => {
-    const ang = (i / RISK_AXES.length) * Math.PI * 2 - Math.PI / 2;
+  const shape = current_axes.map((a, i) => {
+    const ang = (i / current_axes.length) * Math.PI * 2 - Math.PI / 2;
     return `${60 + Math.cos(ang) * 48 * a.v},${60 + Math.sin(ang) * 48 * a.v}`;
   }).join(" ");
   return (
@@ -39,13 +48,12 @@ export function RiskRadarWidget() {
           stroke="#EC4899"
           strokeWidth="1.5"
           initial={{ opacity: 0, scale: 0.6 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           style={{ transformOrigin: "60px 60px" }}
         />
-        {RISK_AXES.map((a, i) => {
-          const ang = (i / RISK_AXES.length) * Math.PI * 2 - Math.PI / 2;
+        {current_axes.map((a, i) => {
+          const ang = (i / current_axes.length) * Math.PI * 2 - Math.PI / 2;
           return (
             <text key={a.label} x={60 + Math.cos(ang) * 57} y={60 + Math.sin(ang) * 57 + 3} textAnchor="middle" fontSize="7.5" fontWeight="700" fill="#8b90a8">
               {a.label}
@@ -54,7 +62,7 @@ export function RiskRadarWidget() {
         })}
       </svg>
       <div className="flex min-w-0 flex-col gap-2">
-        {RISK_AXES.map((a) => (
+        {current_axes.map((a) => (
           <div key={a.label} className="flex items-center gap-2">
             <span className="w-16 text-[11px] font-semibold text-slate-400">{a.label}</span>
             <span className="w-20"><MeterBar pct={a.v * 100} color="#EC4899" /></span>
@@ -237,7 +245,10 @@ export function MarketIntelWidget() {
 
 /* ---------- AI Utilization ---------- */
 export function UtilizationWidget() {
-  const U: Record<string, number> = { research: 78, strategy: 64, finance: 86, operations: 71, legal: 52 };
+  const metrics = useInsightsStore((s) => s.metrics);
+  const defaultU = { research: 78, strategy: 64, finance: 86, operations: 71, legal: 52 };
+  const U: Record<string, number> = metrics?.agent_utilization || defaultU;
+  
   return (
     <div className="grid grid-cols-5 gap-2">
       {AGENTS.map((a, i) => (
@@ -264,15 +275,20 @@ export function UtilizationWidget() {
 
 /* ---------- Growth Score / Company DNA ---------- */
 export function GrowthScoreWidget() {
+  const metrics = useInsightsStore((s) => s.metrics);
+  const baseScore = 72;
+  const memoryBonus = Math.min(15, Math.floor((metrics?.total_memories || 0) / 10));
+  const score = baseScore + memoryBonus;
+  
   return (
     <div>
       <p className="text-4xl font-extrabold tracking-tight text-white">
-        <CountUp to={72} /><span className="text-base text-slate-500">/100</span>
+        <CountUp to={score} /><span className="text-base text-slate-500">/100</span>
       </p>
       <div className="mt-3 flex flex-col gap-2">
         {[
-          { label: "Net revenue retention 114%", up: true },
-          { label: "Expansion outpacing new logos", up: true },
+          { label: "Knowledge base expanding", up: true },
+          { label: "Crew engagement high", up: true },
           { label: "Category search volume −8%", up: false },
         ].map((f) => (
           <p key={f.label} className="flex items-center gap-1.5 text-[11.5px] font-semibold" style={{ color: f.up ? "#34d399" : "#f5a9cf" }}>
@@ -292,23 +308,30 @@ const DNA = [
 ];
 
 export function CompanyDnaWidget() {
+  const metrics = useInsightsStore((s) => s.metrics);
+  const activeTasks = metrics?.active_tasks || 0;
+  
+  const currentDna = DNA.map(d => ({
+    ...d,
+    v: d.label === 'Efficient' ? Math.max(10, d.v - activeTasks) : d.v
+  }));
+  
   return (
     <div>
       <div className="flex h-3 w-full overflow-hidden rounded-full">
-        {DNA.map((d, i) => (
+        {currentDna.map((d, i) => (
           <motion.span
             key={d.label}
             className="h-full"
             style={{ backgroundColor: d.color }}
             initial={{ width: 0 }}
-            whileInView={{ width: `${d.v}%` }}
-            viewport={{ once: true }}
+            animate={{ width: `${d.v}%` }}
             transition={{ duration: 0.9, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
           />
         ))}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
-        {DNA.map((d) => (
+        {currentDna.map((d) => (
           <span key={d.label} className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-300">
             <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: d.color }} /> {d.label} · {d.v}%
           </span>

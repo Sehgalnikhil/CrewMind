@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -7,8 +7,14 @@ from app.models.mixins import IdMixin, TimestampMixin
 
 class Document(Base, IdMixin, TimestampMixin):
     __tablename__ = "documents"
+    __table_args__ = (
+        Index("ix_documents_workspace_created", "workspace_id", "created_at"),
+        Index("ix_documents_workspace_status", "workspace_id", "status"),
+        Index("ix_documents_workspace_type", "workspace_id", "file_type"),
+        Index("ix_documents_workspace_uploader", "workspace_id", "uploaded_by"),
+    )
 
-    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
     uploaded_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     filename: Mapped[str] = mapped_column(String(500))
     file_type: Mapped[str] = mapped_column(String(20))

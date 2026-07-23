@@ -13,7 +13,7 @@ import { cn } from "#/lib/utils";
 interface Levers {
   priceChange: number; // -20..30 %
   headcount: number; // -5..15
-  marketing: number; // 50..300 (Rs K/mo)
+  marketing: number; // 50..300 (₹K/mo)
   churn: number; // 1..6 %
   euEntry: boolean;
 }
@@ -24,8 +24,8 @@ const BASELINE: Levers = { priceChange: 0, headcount: 0, marketing: 120, churn: 
 function project(l: Levers) {
   const rev: number[] = [];
   const cash: number[] = [];
-  let mrr = 121; // Rs K, matches the dashboard story
-  let bank = 1850; // Rs K
+  let mrr = 121; // ₹K, matches the dashboard story
+  let bank = 1850; // ₹K
   for (let m = 0; m < 12; m++) {
     const priceLift = 1 + (l.priceChange / 100) * 0.72; // elasticity discount
     const demandDrag = 1 - Math.max(l.priceChange, 0) * 0.004;
@@ -209,7 +209,7 @@ export function SimulatorPage() {
               <Panel key={d.label} delay={0.1 + i * 0.05} className="p-4">
                 <p className="text-[10px] font-semibold text-slate-400">{d.label}</p>
                 <p className="mt-1 text-2xl font-extrabold tracking-tight text-white">
-                  {d.v === Infinity ? "∞" : `${d.label.startsWith("Runway") ? "" : "Rs "}${d.v}${d.unit === "mo" ? " mo" : d.unit}`}
+                  {d.v === Infinity ? "∞" : `${d.label.startsWith("Runway") ? "" : "₹"}${d.v}${d.unit === "mo" ? " mo" : d.unit}`}
                 </p>
                 <p className={cn("mt-0.5 text-xs font-bold", d.d >= 0 ? "text-emerald-400" : "text-[#f5a9cf]")}>
                   {d.d >= 0 ? "+" : ""}{d.d}{d.unit === "mo" ? " mo" : d.unit} vs baseline

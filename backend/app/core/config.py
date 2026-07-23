@@ -19,11 +19,17 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 12
 
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-1.5-flash"
-    gemini_fast_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-flash-latest"
+    gemini_fast_model: str = "gemini-flash-latest"
+    # Quotas are per-model, so when the primary model's rate limit is hit we
+    # retry on this one before backing off.
+    gemini_fallback_model: str = "gemini-flash-lite-latest"
 
     storage_dir: Path = BACKEND_DIR / "storage"
     chroma_dir: Path = BACKEND_DIR / "chroma_data"
+
+    razorpay_key_id: str = "rzp_test_mock123"
+    razorpay_key_secret: str = "mock_secret"
 
     cors_origins: list[str] = ["http://localhost:5173"]
 

@@ -9,9 +9,7 @@ export async function listDocuments(): Promise<DocumentItem[]> {
 export async function uploadDocument(file: File): Promise<DocumentItem> {
   const formData = new FormData();
   formData.append("file", file);
-  const { data } = await api.post<DocumentItem>("/documents", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const { data } = await api.post<DocumentItem>("/documents", formData);
   return data;
 }
 

@@ -1,32 +1,31 @@
-"""Shared, org-scoped memory that every agent reads from and writes to.
+"""Backward-compatible memory store — delegates to the tiered memory engine.
 
-This is what makes the crew feel like a team rather than five isolated
-chatbots: a finding one agent records becomes context for the next.
+Existing code that calls write_memory() / read_recent_memory() /
+format_memory_for_prompt() continues to work exactly as before.
 """
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.memory import MemoryRecord
+from app.services.memory.memory_engine import (
+    format_for_prompt,
+    read_recent,
+    write,
+)
 
 
-async def write_memory(db: AsyncSession, org_id: str, agent_source: str, kind: str, content: str) -> None:
-    db.add(MemoryRecord(org_id=org_id, agent_source=agent_source, kind=kind, content=content))
-    await db.commit()
+async def write_memory(
+    db: AsyncSession, workspace_id: str, agent_source: str, kind: str, content: str
+) -> None:
+    """Write a memory record.  Backward-compatible wrapper."""
+    await write(db, workspace_id, agent_source, kind, content)
 
 
-async def read_recent_memory(db: AsyncSession, org_id: str, limit: int = 20) -> list[MemoryRecord]:
-    result = await db.execute(
-        select(MemoryRecord)
-        .where(MemoryRecord.org_id == org_id)
-        .order_by(MemoryRecord.created_at.desc())
-        .limit(limit)
-    )
-    return list(result.scalars().all())
+async def read_recent_memory(
+    db: AsyncSession, workspace_id: str, limit: int = 20
+) -> list[MemoryRecord]:
+    return await read_recent(db, workspace_id, limit=limit)
 
 
 def format_memory_for_prompt(records: list[MemoryRecord]) -> str:
-    if not records:
-        return "No shared memory yet."
-    lines = [f"- [{r.agent_source} · {r.kind}] {r.content}" for r in reversed(records)]
-    return "\n".join(lines)
+    return format_for_prompt(records)

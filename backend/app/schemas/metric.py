@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class OrganizationMetricResponse(BaseModel):
     id: str
-    org_id: str
+    workspace_id: str
     revenue_run_rate: float
     revenue_trend: str
     revenue_trend_up: bool

@@ -3,11 +3,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_org
+from app.api.deps import RequestContext, get_request_context
 from app.core.database import get_db
-from app.models.organization import Organization
+from app.models.tenant import Workspace
 from app.models.metric import OrganizationMetric
 from app.schemas.metric import OrganizationMetricResponse
+from app.services.insights.aggregation import get_dashboard_metrics
 
 router = APIRouter(prefix="/api/metrics", tags=["metrics"])
 
@@ -18,15 +19,16 @@ INITIAL_CASHFLOW = [12.0, 15.0, 11.0, 18.0, 14.0, 22.0, 20.0, 25.0, 28.0, 22.0, 
 
 @router.get("", response_model=OrganizationMetricResponse)
 async def get_metrics(
-    org: Organization = Depends(get_current_org),
+    ctx: RequestContext = Depends(get_request_context),
     db: AsyncSession = Depends(get_db),
 ) -> OrganizationMetricResponse:
-    result = await db.execute(select(OrganizationMetric).where(OrganizationMetric.org_id == org.id))
+    workspace_id = ctx.workspace.id if ctx.workspace else None
+    result = await db.execute(select(OrganizationMetric).where(OrganizationMetric.workspace_id == workspace_id))
     metric = result.scalars().first()
     
     if not metric:
         metric = OrganizationMetric(
-            org_id=org.id,
+            workspace_id=workspace_id,
             revenue_run_rate=1.24,
             revenue_trend="+12% vs last quarter",
             revenue_trend_up=True,
@@ -42,7 +44,7 @@ async def get_metrics(
         
     return OrganizationMetricResponse(
         id=metric.id,
-        org_id=metric.org_id,
+        workspace_id=metric.workspace_id,
         revenue_run_rate=metric.revenue_run_rate,
         revenue_trend=metric.revenue_trend,
         revenue_trend_up=metric.revenue_trend_up,
@@ -53,3 +55,11 @@ async def get_metrics(
         cash_flow_series=json.loads(metric.cash_flow_series_json),
         created_at=metric.created_at
     )
+
+@router.get("/dashboard")
+async def get_live_dashboard_metrics(
+    ctx: RequestContext = Depends(get_request_context),
+    db: AsyncSession = Depends(get_db),
+):
+    workspace_id = ctx.workspace.id if ctx.workspace else None
+    return await get_dashboard_metrics(db, workspace_id)

@@ -226,18 +226,28 @@ export function AgentPanel({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { runStatus, agentStatuses, reportId, error } = useAgentRunSocket(runId);
+  const { runStatus, agentStatuses, reportId, error, reasoningSteps } = useAgentRunSocket(runId);
+
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
   const mutation = useMutation({
     mutationFn: startAgentRun,
-    onSuccess: (run) => onRunStarted(run.id),
+    onSuccess: (run) => {
+      setMutationError(null);
+      onRunStarted(run.id);
+    },
+    onError: (err: any) => {
+      setMutationError(err.response?.data?.detail || err.message || "Failed to start analysis run.");
+    },
   });
 
   const isRunning = runStatus !== null && runStatus !== "completed" && runStatus !== "failed";
+  const displayError = error || mutationError;
 
-  /* Build a live timeline from status transitions */
+  /* Build a live timeline from status transitions and reasoning */
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const prevStatuses = useRef<Record<PanelAgentKey, AgentPanelStatus> | null>(null);
+  const prevReasoningCount = useRef(0);
   const eventId = useRef(0);
 
   useEffect(() => {
@@ -246,6 +256,8 @@ export function AgentPanel({
     }
     const prev = prevStatuses.current;
     const next: TimelineEvent[] = [];
+    
+    // Status transitions
     for (const meta of CREW_META) {
       const before = prev?.[meta.key] ?? "idle";
       const now = agentStatuses[meta.key];
@@ -258,10 +270,33 @@ export function AgentPanel({
         });
       }
     }
-    if (next.length) setEvents((e) => [...next, ...e].slice(0, 12));
+    
+    // Reasoning steps
+    if (reasoningSteps.length > prevReasoningCount.current) {
+      const newSteps = reasoningSteps.slice(prevReasoningCount.current);
+      for (const step of newSteps) {
+        const meta = CREW_META.find(m => m.key === step.agent);
+        if (!meta) continue;
+        
+        let text = `Internal Monologue:\n${step.monologue.map(m => `• ${m}`).join('\n')}`;
+        if (step.critic) {
+          text += `\n\nReflection: ${step.critic}`;
+        }
+        
+        next.push({
+          id: eventId.current++,
+          color: meta.color,
+          text,
+          at: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        });
+      }
+    }
+    
+    if (next.length) setEvents((e) => [...next, ...e].slice(0, 30));
     prevStatuses.current = { ...agentStatuses };
+    prevReasoningCount.current = reasoningSteps.length;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentStatuses, runStatus]);
+  }, [agentStatuses, runStatus, reasoningSteps]);
 
   useEffect(() => {
     if (reportId) {
@@ -311,14 +346,14 @@ export function AgentPanel({
         </motion.button>
       </div>
 
-      {error && (
+      {displayError && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-2.5 rounded-2xl border border-[#D97706]/30 bg-[#D97706]/10 px-4 py-3 text-sm text-[#f3c583]"
         >
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          {error}
+          {displayError}
         </motion.div>
       )}
 
@@ -366,7 +401,7 @@ export function AgentPanel({
                     className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full border-2 border-[#0a0c14]"
                     style={{ backgroundColor: e.color, boxShadow: `0 0 10px ${e.color}` }}
                   />
-                  <p className="text-[13px] text-slate-300">{e.text}</p>
+                  <p className="whitespace-pre-wrap text-[13px] text-slate-300">{e.text}</p>
                   <p className="font-mono text-[9px] uppercase tracking-wider text-slate-600">{e.at}</p>
                 </motion.li>
               ))}

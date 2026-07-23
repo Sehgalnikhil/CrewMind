@@ -8,6 +8,7 @@ export type AgentPanelStatus = "idle" | "running" | "done";
 type SocketEvent =
   | { type: "run_status"; status: string }
   | { type: "agent_status"; agent_key: PanelAgentKey; status: "running" | "done" }
+  | { type: "reasoning_step"; agent: PanelAgentKey; monologue: string[]; critic: string | null; confidence: number }
   | { type: "completed"; report_id: string }
   | { type: "failed"; message: string }
   | { type: "error"; message: string };
@@ -17,6 +18,7 @@ export interface RunProgressState {
   agentStatuses: Record<PanelAgentKey, AgentPanelStatus>;
   reportId: string | null;
   error: string | null;
+  reasoningSteps: import("#/types").ReasoningStep[];
 }
 
 const IDLE_STATUSES: Record<PanelAgentKey, AgentPanelStatus> = {
@@ -36,12 +38,13 @@ export function useAgentRunSocket(runId: string | null) {
     agentStatuses: IDLE_STATUSES,
     reportId: null,
     error: null,
+    reasoningSteps: [],
   });
 
   useEffect(() => {
     if (!runId || !token) return;
 
-    setState({ runStatus: "pending", agentStatuses: IDLE_STATUSES, reportId: null, error: null });
+    setState({ runStatus: "pending", agentStatuses: IDLE_STATUSES, reportId: null, error: null, reasoningSteps: [] });
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(
@@ -57,6 +60,11 @@ export function useAgentRunSocket(runId: string | null) {
         setState((s) => ({
           ...s,
           agentStatuses: { ...s.agentStatuses, [data.agent_key]: data.status },
+        }));
+      } else if (data.type === "reasoning_step") {
+        setState((s) => ({
+          ...s,
+          reasoningSteps: [...s.reasoningSteps, data],
         }));
       } else if (data.type === "completed") {
         setState((s) => ({ ...s, runStatus: "completed", reportId: data.report_id }));

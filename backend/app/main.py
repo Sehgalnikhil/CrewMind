@@ -3,9 +3,10 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import agent_runs, auth, chat, documents, metrics, reports, status, ws
+from app.api import agent_runs, agent_state, auth, chat, documents, memory, metrics, reports, status, ws, knowledge, system, sessions, mfa, invitations, organization, api_keys, billing
 from app.core.config import get_settings
 from app.core.database import init_db
+import logging
 
 logger = logging.getLogger("crewmind")
 settings = get_settings()
@@ -28,17 +29,30 @@ app.include_router(reports.router)
 app.include_router(metrics.router)
 app.include_router(status.router)
 app.include_router(ws.router)
+app.include_router(agent_state.router)
+app.include_router(memory.router)
+app.include_router(knowledge.router)
+app.include_router(system.router)
+app.include_router(sessions.router)
+app.include_router(mfa.router)
+app.include_router(invitations.router)
+app.include_router(organization.router)
+app.include_router(api_keys.router)
+app.include_router(billing.router)
 
+
+import asyncio
 
 @app.on_event("startup")
 async def on_startup() -> None:
+    from app.services.agents.loop import run_autonomous_loop
     await init_db()
     if not settings.has_llm_key:
         logger.warning(
             "GEMINI_API_KEY is not set — agent features will be unavailable until it is "
             "configured in backend/.env"
         )
-
+    asyncio.create_task(run_autonomous_loop())
 
 @app.get("/health")
 async def health() -> dict:
