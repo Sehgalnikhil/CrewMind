@@ -463,9 +463,9 @@ export function WarRoomPage() {
 
   return (
     <AppShell title="War Room" wide flush>
-      <div className="flex h-auto min-h-full flex-col gap-4 overflow-y-auto p-4 pb-28 sm:p-6 xl:h-full xl:flex-row xl:overflow-hidden xl:pb-6">
+      <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 pb-28 sm:p-6 xl:flex-row xl:overflow-hidden xl:pb-6">
         {/* main stage */}
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <div className="flex min-h-0 flex-none xl:flex-1 flex-col gap-4">
           <Panel deep className="scanline relative shrink-0 overflow-hidden px-5 pb-2 pt-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="min-w-0">
@@ -508,7 +508,7 @@ export function WarRoomPage() {
 
           {/* transcript / idle prompt */}
           {session === "idle" ? (
-            <Panel className="flex min-h-[350px] xl:min-h-0 flex-1 flex-col items-center justify-center gap-5 p-8 text-center">
+            <Panel className="flex h-[60vh] min-h-[350px] xl:h-auto xl:min-h-0 flex-none xl:flex-1 flex-col items-center justify-center gap-5 p-8 text-center">
               <motion.span
                 animate={{ y: [0, -8, 0] }}
                 transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
@@ -551,7 +551,7 @@ export function WarRoomPage() {
               </div>
             </Panel>
           ) : (
-            <Panel className="flex min-h-[400px] xl:min-h-0 flex-1 flex-col overflow-hidden p-0">
+            <Panel className="flex h-[60vh] min-h-[400px] xl:h-auto xl:min-h-0 flex-none xl:flex-1 flex-col overflow-hidden p-0">
               <div ref={scrollRef} role="log" aria-label="Deliberation transcript" className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
                 {transcript.map((t) =>
                   isUserTurn(t) ? (
