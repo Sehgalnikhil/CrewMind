@@ -116,6 +116,36 @@ ADDONS: Dict[str, AddonConfig] = {
         price=599900,
         description="Top up your monthly AI allowance."
     ),
+    "custom_ai_models": AddonConfig(
+        id="custom_ai_models",
+        name="Custom AI Models",
+        price=99900,
+        description="Bring your own model, custom prompts, and organization-specific AI behavior."
+    ),
+    "voice_executive": AddonConfig(
+        id="voice_executive",
+        name="Voice Executive",
+        price=49900,
+        description="Voice conversations, executive meeting mode, and speech-to-speech interaction."
+    ),
+    "github_integration": AddonConfig(
+        id="github_integration",
+        name="GitHub Integration",
+        price=29900,
+        description="Repository analysis, code intelligence, and development insights."
+    ),
+    "google_workspace": AddonConfig(
+        id="google_workspace",
+        name="Google Workspace Integration",
+        price=29900,
+        description="Google Docs, Drive, Gmail, and Calendar synchronization."
+    ),
+    "slack_integration": AddonConfig(
+        id="slack_integration",
+        name="Slack Integration",
+        price=29900,
+        description="Team notifications, AI summaries, and channel intelligence."
+    ),
 }
 
 def get_plan(plan_name: str) -> Optional[PlanConfig]:

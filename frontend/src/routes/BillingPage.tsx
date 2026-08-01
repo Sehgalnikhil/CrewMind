@@ -76,6 +76,7 @@ const PLANS = [
 const ADD_ONS = [
   {
     name: "AI Executive Marketplace",
+    id: "marketplace",
     icon: Building2,
     price: "Coming Soon",
     description: "Install specialized AI Executives & domain-specific AI capabilities.",
@@ -84,6 +85,7 @@ const ADD_ONS = [
   },
   {
     name: "Custom AI Models",
+    id: "custom_ai_models",
     icon: Cpu,
     price: "₹999/mo",
     description: "Bring your own model, custom prompts, and organization-specific AI behavior.",
@@ -92,6 +94,7 @@ const ADD_ONS = [
   },
   {
     name: "Voice Executive",
+    id: "voice_executive",
     icon: Mic,
     price: "₹499/mo",
     description: "Voice conversations, executive meeting mode, and speech-to-speech interaction.",
@@ -100,6 +103,7 @@ const ADD_ONS = [
   },
   {
     name: "GitHub Integration",
+    id: "github_integration",
     icon: Code,
     price: "₹299/mo",
     description: "Repository analysis, code intelligence, and development insights.",
@@ -108,6 +112,7 @@ const ADD_ONS = [
   },
   {
     name: "Google Workspace Integration",
+    id: "google_workspace",
     icon: Cloud,
     price: "₹299/mo",
     description: "Google Docs, Drive, Gmail, and Calendar synchronization.",
@@ -116,6 +121,7 @@ const ADD_ONS = [
   },
   {
     name: "Slack Integration",
+    id: "slack_integration",
     icon: MessageSquare,
     price: "₹299/mo",
     description: "Team notifications, AI summaries, and channel intelligence.",
@@ -124,6 +130,7 @@ const ADD_ONS = [
   },
   {
     name: "CRM Integration",
+    id: "crm_integration",
     icon: Briefcase,
     price: "₹499/mo",
     description: "Supports future integrations such as Salesforce, HubSpot, and Zoho.",
@@ -149,12 +156,52 @@ export function BillingPage() {
   const [addingAddon, setAddingAddon] = useState<string | null>(null);
   const [addedAddons, setAddedAddons] = useState<string[]>([]);
 
-  const handleAddAddon = (addonName: string) => {
-    setAddingAddon(addonName);
-    setTimeout(() => {
-      setAddedAddons((prev) => [...prev, addonName]);
-      setAddingAddon(null);
-    }, 1200);
+  const { mutate: subscribeAddon } = useMutation({
+    mutationFn: async (addonId: string) => {
+      setAddingAddon(addonId);
+      try {
+        const { order_id, key_id, amount } = await createOrder({ plan_name: "addon", addon_id: addonId });
+        
+        if (amount === 0) {
+          setAddedAddons((prev) => [...prev, addonId]);
+          return;
+        }
+
+        const addon = ADD_ONS.find(a => a.id === addonId);
+
+        const options = {
+          key: key_id,
+          order_id: order_id,
+          name: "CrewMind Add-on",
+          description: addon?.name || "Add-on",
+          handler: async (response: any) => {
+            await verifyPayment({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            setAddedAddons((prev) => [...prev, addonId]);
+          },
+          theme: { color: addon?.color || "#8A7BEF" },
+          modal: {
+            ondismiss: () => {
+              setAddingAddon(null);
+            }
+          }
+        };
+
+        const rzp = new Razorpay(options as any);
+        rzp.on('payment.failed', () => setAddingAddon(null));
+        rzp.open();
+      } catch (error) {
+        alert("Failed to create add-on order");
+        setAddingAddon(null);
+      }
+    },
+  });
+
+  const handleAddAddon = (addonId: string) => {
+    subscribeAddon(addonId);
   };
 
   // ROI Calculator State
@@ -441,11 +488,11 @@ export function BillingPage() {
                     )}
                   </div>
                   <button 
-                    disabled={addon.status === "Coming Soon" || addedAddons.includes(addon.name) || addingAddon === addon.name}
-                    onClick={() => handleAddAddon(addon.name)}
+                    disabled={addon.status === "Coming Soon" || addedAddons.includes(addon.id) || addingAddon === addon.id}
+                    onClick={() => handleAddAddon(addon.id)}
                     className={cn(
                       "w-full rounded-xl border py-2.5 text-[13px] font-bold transition-all relative overflow-hidden flex items-center justify-center h-11",
-                      addedAddons.includes(addon.name)
+                      addedAddons.includes(addon.id)
                         ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
                         : addon.status === "Coming Soon"
                         ? "border-white/5 bg-white/[0.02] text-white/40"
@@ -453,7 +500,7 @@ export function BillingPage() {
                     )}
                   >
                     <AnimatePresence mode="wait">
-                      {addingAddon === addon.name ? (
+                      {addingAddon === addon.id ? (
                         <motion.div
                           key="adding"
                           initial={{ opacity: 0, y: 10 }}
@@ -464,7 +511,7 @@ export function BillingPage() {
                           <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
                           <span>Adding...</span>
                         </motion.div>
-                      ) : addedAddons.includes(addon.name) ? (
+                      ) : addedAddons.includes(addon.id) ? (
                         <motion.div
                           key="added"
                           initial={{ opacity: 0, scale: 0.8 }}
