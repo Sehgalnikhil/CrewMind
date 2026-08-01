@@ -64,3 +64,8 @@ async def on_startup() -> None:
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok", "app": settings.app_name, "llm_configured": settings.has_llm_key}
+
+@app.get("/")
+async def root() -> dict:
+    return {"message": "CrewMind API is running"}
+
