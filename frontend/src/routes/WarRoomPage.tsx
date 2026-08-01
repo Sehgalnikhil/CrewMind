@@ -153,8 +153,8 @@ function stanceAgreement(a?: ScriptTurn, b?: ScriptTurn): number | null {
 
 function AgreementMatrix({ latest }: { latest: Partial<Record<CrewAgentKey, ScriptTurn>> }) {
   return (
-    <div>
-      <div className="grid grid-cols-6 gap-1" role="table" aria-label="Executive agreement matrix">
+    <div className="w-full overflow-hidden">
+      <div className="grid grid-cols-6 gap-1 w-full" role="table" aria-label="Executive agreement matrix">
         <span />
         {AGENTS.map((a) => (
           <span key={a.key} className="text-center font-mono text-[8px] font-extrabold" style={{ color: a.color }}>
@@ -184,7 +184,7 @@ function AgreementMatrix({ latest }: { latest: Partial<Record<CrewAgentKey, Scri
           </div>
         ))}
       </div>
-      <div className="mt-2.5 flex items-center gap-3 font-mono text-[8px] uppercase tracking-widest text-slate-500">
+      <div className="mt-2.5 flex flex-wrap items-center gap-3 font-mono text-[8px] uppercase tracking-widest text-slate-500">
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-[#059669]/60" /> aligned</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-[#D97706]/50" /> partial</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-[#EC4899]/60" /> opposed</span>
@@ -277,9 +277,9 @@ function TurnBubble({ turn }: { turn: PlayedTurn }) {
                   </span>
                   <span className="text-[10px] font-bold text-slate-300">{turn.confidence}%</span>
                 </div>
-                <span className="ml-auto flex flex-wrap gap-1.5">
+                <span className="ml-auto flex flex-wrap gap-1.5 min-w-0">
                   {turn.evidence.map((e) => (
-                    <span key={e} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[9px] font-semibold text-slate-400">
+                    <span key={e} className="truncate max-w-[200px] rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[9px] font-semibold text-slate-400">
                       {e}
                     </span>
                   ))}
@@ -463,7 +463,7 @@ export function WarRoomPage() {
 
   return (
     <AppShell title="War Room" wide flush>
-      <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 pb-28 sm:p-6 xl:flex-row xl:overflow-hidden xl:pb-6">
+      <div className="flex h-auto min-h-full flex-col gap-4 overflow-y-auto p-4 pb-28 sm:p-6 xl:h-full xl:flex-row xl:overflow-hidden xl:pb-6">
         {/* main stage */}
         <div className="flex min-h-0 flex-1 flex-col gap-4">
           <Panel deep className="scanline relative shrink-0 overflow-hidden px-5 pb-2 pt-4">
@@ -508,7 +508,7 @@ export function WarRoomPage() {
 
           {/* transcript / idle prompt */}
           {session === "idle" ? (
-            <Panel className="flex flex-1 flex-col items-center justify-center gap-5 p-8 text-center">
+            <Panel className="flex min-h-[350px] xl:min-h-0 flex-1 flex-col items-center justify-center gap-5 p-8 text-center">
               <motion.span
                 animate={{ y: [0, -8, 0] }}
                 transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
@@ -551,7 +551,7 @@ export function WarRoomPage() {
               </div>
             </Panel>
           ) : (
-            <Panel className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+            <Panel className="flex min-h-[400px] xl:min-h-0 flex-1 flex-col overflow-hidden p-0">
               <div ref={scrollRef} role="log" aria-label="Deliberation transcript" className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
                 {transcript.map((t) =>
                   isUserTurn(t) ? (
@@ -643,7 +643,7 @@ export function WarRoomPage() {
         </div>
 
         {/* right rail */}
-        <div className="flex w-full shrink-0 flex-col gap-4 xl:w-80 xl:overflow-y-auto">
+        <div className="flex w-full min-w-0 shrink-0 flex-col gap-4 xl:w-80 xl:overflow-y-auto">
           {selectedExecutive ? (
             <>
               <Panel delay={0.1} className="p-5">
@@ -696,7 +696,7 @@ export function WarRoomPage() {
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
                     {evidenceCollected.map((e) => (
-                      <span key={e} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold text-slate-300">
+                      <span key={e} className="truncate max-w-full rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold text-slate-300">
                         {e}
                       </span>
                     ))}

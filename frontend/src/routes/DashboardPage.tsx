@@ -62,6 +62,9 @@ function agentByKey(key: string) {
 }
 
 function sparkPath(w: number, h: number, series: number[]) {
+  if (!series || series.length === 0) return `M0,${h} L${w},${h}`;
+  if (series.length === 1) return `M0,${h / 2} L${w},${h / 2}`;
+  
   const max = Math.max(...series);
   const min = Math.min(...series);
   return series
