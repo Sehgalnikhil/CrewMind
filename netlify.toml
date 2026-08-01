@@ -4,18 +4,16 @@
   publish = "dist"
 
 # Proxy API requests to the production backend
-# ACTION REQUIRED: Once your backend is deployed to Render (e.g., https://crewmind-backend.onrender.com),
-# uncomment the two lines below and replace the URL with your actual Render URL.
-# [[redirects]]
-#   from = "/api/*"
-#   to = "https://crewmind-backend.onrender.com/api/:splat"
-#   status = 200
-#   force = true
+[[redirects]]
+  from = "/api/*"
+  to = "https://crewmind-bjlj.onrender.com/api/:splat"
+  status = 200
+  force = true
 
 # Proxy WebSockets
 [[redirects]]
   from = "/ws/*"
-  to = "wss://your-production-backend-url.com/ws/:splat"
+  to = "https://crewmind-bjlj.onrender.com/ws/:splat"
   status = 200
   force = true
 
