@@ -106,27 +106,31 @@ function OrbitalMap({ hovered, onSelect }: { hovered: string | null; onSelect: (
         const lit = hovered === d.key || hovered === null;
         const watcher = agentByKey(d.watcher);
         return (
-          <motion.button
+          <motion.div
             key={d.key}
-            onClick={() => onSelect(d)}
-            className={cn("absolute left-1/2 top-1/2 flex flex-col items-center", ["float-a", "float-b", "float-c"][i % 3], "pointer-events-auto")}
+            className="absolute left-1/2 top-1/2 pointer-events-none"
             initial={{ x: Math.cos(ang) * R - 34, y: Math.sin(ang) * R - 30 }}
             animate={{ opacity: lit ? 1 : 0.35, scale: hovered === d.key ? 1.12 : 1, x: Math.cos(ang) * R - 34, y: Math.sin(ang) * R - 30 }}
             transition={{ type: "spring", stiffness: 300, damping: 26 }}
-            aria-label={`Open ${d.name}`}
           >
-            <span
-              className="flex h-14 w-16 flex-col items-center justify-center rounded-2xl border backdrop-blur-md"
-              style={{ backgroundColor: `${d.color}1d`, borderColor: `${d.color}55`, boxShadow: `0 0 26px -10px ${d.color}` }}
+            <button
+              onClick={() => onSelect(d)}
+              className={cn("flex flex-col items-center pointer-events-auto", ["float-a", "float-b", "float-c"][i % 3])}
+              aria-label={`Open ${d.name}`}
             >
-              <span className="text-xs font-extrabold" style={{ color: d.color }}>{d.people}</span>
-              <span className="font-mono text-[7px] uppercase tracking-wider text-slate-400">people</span>
-            </span>
-            <span className="mt-1 text-[10px] font-bold text-white">{d.name}</span>
-            <span className="flex items-center gap-1 font-mono text-[7px] uppercase tracking-wider text-slate-500">
-              <span className="h-1 w-1 rounded-full" style={{ backgroundColor: watcher.color }} /> {watcher.persona} watching
-            </span>
-          </motion.button>
+              <span
+                className="flex h-14 w-16 flex-col items-center justify-center rounded-2xl border backdrop-blur-md"
+                style={{ backgroundColor: `${d.color}1d`, borderColor: `${d.color}55`, boxShadow: `0 0 26px -10px ${d.color}` }}
+              >
+                <span className="text-xs font-extrabold" style={{ color: d.color }}>{d.people}</span>
+                <span className="font-mono text-[7px] uppercase tracking-wider text-slate-400">people</span>
+              </span>
+              <span className="mt-1 text-[10px] font-bold text-white">{d.name}</span>
+              <span className="flex items-center gap-1 font-mono text-[7px] uppercase tracking-wider text-slate-500">
+                <span className="h-1 w-1 rounded-full" style={{ backgroundColor: watcher.color }} /> {watcher.persona} watching
+              </span>
+            </button>
+          </motion.div>
         );
       })}
     </div>
