@@ -58,7 +58,7 @@ export const usePermissionStore = create<PermissionState>()(
     }),
     {
       name: "crewmind-permissions",
-      partialize: (s) => ({ workspaceId: s.workspaceId }),
+      partialize: (s) => ({ workspaceId: s.workspaceId, context: s.context }),
     }
   )
 );
