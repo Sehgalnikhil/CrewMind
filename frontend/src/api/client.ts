@@ -63,7 +63,11 @@ api.interceptors.response.use(
           response.data = parsed;
         }
       } catch (e) {
-        // ignore and return as string
+        // If the proxy returns an HTML page (e.g. 404 or parked domain page) with a 200 OK,
+        // we must reject it so React Query treats it as an error and mock data triggers.
+        if (response.data.trim().startsWith('<')) {
+          return Promise.reject(new Error("Received HTML payload instead of JSON"));
+        }
       }
     }
     return response;
