@@ -11,7 +11,8 @@ from app.api.deps import RequestContext, RequiresPermission, get_current_user
 from app.core.audit import log_audit_event
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.models.tenant import Subscription, Workspace, OrganizationMember
+from app.models.tenant import Subscription, Workspace
+from app.models.rbac import OrganizationMember
 from app.models.user import User
 from app.models.usage import WorkspaceUsage
 from app.core.billing_catalog import get_plan, get_addon
