@@ -16,7 +16,7 @@ import {
   TrustedMarquee,
   WhySection,
 } from "#/components/world/Sections";
-import { FaqSection, FinalCta, PricingSection, WorldFooter } from "#/components/world/Closing";
+import { FaqSection, FinalCta, WorldFooter } from "#/components/world/Closing";
 
 const WorldCanvas = lazy(() =>
   import("#/components/world/WorldCanvas").then((m) => ({ default: m.WorldCanvas })),
@@ -56,7 +56,6 @@ function Navbar() {
             ["The Agents", "#agents"],
             ["Dashboard", "/dashboard"],
             ["Capabilities", "#features"],
-            ["Pricing", "#pricing"],
           ].map(([label, href]) => (
             <a key={href} href={href} className="group relative text-sm font-semibold text-slate-300 transition-colors hover:text-white">
               {label}
@@ -122,7 +121,6 @@ export function LandingPage() {
         <SecuritySection />
         <StoriesSection />
         <IntegrationsSection />
-        <PricingSection />
         <FaqSection />
         <FinalCta />
       </main>
