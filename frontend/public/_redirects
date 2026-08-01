@@ -1,2 +1,3 @@
-/api/* /404.html 404
-/* /index.html 200
+/api/*  https://crewmind-bjlj.onrender.com/api/:splat  200!
+/ws/*   https://crewmind-bjlj.onrender.com/ws/:splat   200!
+/*      /index.html   200
