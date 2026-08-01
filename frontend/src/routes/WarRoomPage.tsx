@@ -467,15 +467,15 @@ export function WarRoomPage() {
         {/* main stage */}
         <div className="flex min-h-0 flex-1 flex-col gap-4">
           <Panel deep className="scanline relative shrink-0 overflow-hidden px-5 pb-2 pt-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="min-w-0">
                 <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-slate-500">the strategy table</p>
                 <h2 className="text-lg font-extrabold tracking-tight text-white">
                   {script ? script.question : "Five executives. One decision."}
                 </h2>
               </div>
               {session !== "idle" && (
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   <button
                     onClick={() => setPlaying((p) => !p)}
                     aria-label={playing ? "Pause deliberation" : "Resume deliberation"}
@@ -533,7 +533,7 @@ export function WarRoomPage() {
                 />
                 <button
                   onClick={() => input.trim() && start(input)}
-                  className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-black shadow-[0_0_36px_-10px_rgba(138,123,239,0.9)] transition-transform hover:-translate-y-0.5"
+                  className="flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-black shadow-[0_0_36px_-10px_rgba(138,123,239,0.9)] transition-transform hover:-translate-y-0.5"
                 >
                   <Zap className="h-4 w-4" /> Convene
                 </button>
@@ -573,7 +573,7 @@ export function WarRoomPage() {
                       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                       className="glass-deep conic-ring rounded-3xl p-6"
                     >
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-slate-500">signed verdict</p>
                         <GlowChip color={verdict.confidence >= 70 ? "#059669" : "#D97706"}>confidence {verdict.confidence}%</GlowChip>
                       </div>
