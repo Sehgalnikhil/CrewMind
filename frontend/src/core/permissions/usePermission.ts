@@ -4,7 +4,7 @@ import { usePermissionStore } from "#/stores/permissionStore";
 
 /** True when the current user holds the permission in the active workspace. */
 export function usePermission(permission: Permission | string): boolean {
-  return usePermissionStore((s) => s.(Array.isArray(context?.permissions) ? context.permissions : []).includes(permission) ?? false);
+  return usePermissionStore((s) => (Array.isArray(s.context?.permissions) ? s.context!.permissions : []).includes(permission));
 }
 
 /** True when the user holds EVERY listed permission. */
@@ -20,7 +20,7 @@ export function useRole(): Role | null {
   return usePermissionStore((s) => s.context?.role ?? null);
 }
 
-/** Non-hook check for use outside components (e.g. filtering nav lists). */
 export function hasPermission(permission: string): boolean {
-  return usePermissionStore.getState().(Array.isArray(context?.permissions) ? context.permissions : []).includes(permission) ?? false;
+  const context = usePermissionStore.getState().context;
+  return (Array.isArray(context?.permissions) ? context!.permissions : []).includes(permission);
 }
