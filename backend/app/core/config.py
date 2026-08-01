@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from pathlib import Path
 from pydantic import field_validator
@@ -12,7 +13,8 @@ class Settings(BaseSettings):
     app_name: str = "CrewMind"
     environment: str = "development"
 
-    database_url: str = f"sqlite+aiosqlite:///{BACKEND_DIR / 'crewmind.db'}"
+    # Explicitly read from os.environ first to ensure cloud variables are captured
+    database_url: str = os.environ.get("DATABASE_URL") or f"sqlite+aiosqlite:///{BACKEND_DIR / 'crewmind.db'}"
     
     @field_validator("database_url")
     @classmethod
