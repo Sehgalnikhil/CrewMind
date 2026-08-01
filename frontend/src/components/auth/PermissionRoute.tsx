@@ -26,7 +26,7 @@ export function PermissionRoute({
   // Context still loading — PermissionProvider shows the loader above us.
   if (!context) return <>{children}</>;
 
-  const permissionOk = !permission || context.permissions.includes(permission);
+  const permissionOk = !permission || (Array.isArray(context.permissions) ? context.permissions : []).includes(permission);
   const roleOk = !roles || (context.role !== null && roles.includes(context.role));
 
   if (!permissionOk || !roleOk) {
