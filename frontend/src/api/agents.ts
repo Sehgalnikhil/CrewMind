@@ -9,8 +9,9 @@ export async function startAgentRun(): Promise<AgentRun> {
     return {
       id: "mock-run-123",
       status: "pending",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      trigger: "manual",
+      error_message: null,
+      created_at: new Date().toISOString()
     } as AgentRun;
   }
 }

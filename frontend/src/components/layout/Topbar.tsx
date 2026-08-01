@@ -77,7 +77,7 @@ function NotificationsMenu() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="glass-deep absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl"
+            className="glass-deep absolute right-[-40px] top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl sm:right-0 sm:w-80"
           >
             <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
               <p className="text-sm font-bold text-white">Activity</p>
@@ -160,9 +160,9 @@ export function Topbar({
           <Menu className="h-5 w-5" />
         </button>
         <div className="min-w-0">
-          <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-slate-500">crewmind · executive os</p>
+          <p className="hidden font-mono text-[9px] uppercase tracking-[0.3em] text-slate-500 sm:block">crewmind · executive os</p>
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-lg font-extrabold tracking-tight text-white">{title}</h1>
+            <h1 className="truncate text-base font-extrabold tracking-tight text-white sm:text-lg">{title}</h1>
             {currentNav && (
               <button
                 onClick={() => toggleBookmark({ id: currentNav.to, label: currentNav.label, to: currentNav.to })}

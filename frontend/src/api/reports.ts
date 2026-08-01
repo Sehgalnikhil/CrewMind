@@ -4,12 +4,14 @@ import type { Report } from "#/types";
 const MOCK_REPORTS: Report[] = [
   {
     id: "mock-report-123",
-    run_id: "mock-run-123",
+    agent_run_id: "mock-run-123",
     title: "EU Market Expansion Strategy",
     summary: "Analysis of DACH mid-market entry viability with CAC constraints.",
-    content: "# EU Market Expansion Strategy\n\nBased on the analysis, entering the DACH mid-market is highly viable. We recommend holding pricing steady rather than matching competitor cuts, as retention modeling shows better long-term ARR.\n\n## Action Items\n1. Proceed with merchant-of-record integration.\n2. Finalize SOC 2 Type II compliance.\n3. Monitor churn metrics closely in Q3.",
+    business_health_score: 85,
+    risks: ["High CAC in new markets"],
+    opportunities: ["DACH mid-market entry"],
+    recommendations: ["Proceed with merchant-of-record integration", "Finalize SOC 2 Type II compliance", "Monitor churn metrics closely in Q3"],
     created_at: new Date().toISOString(),
-    status: "final"
   }
 ];
 

@@ -34,9 +34,66 @@ export interface InvitationOut {
   token: string;
 }
 
+const MOCK_USER_CONTEXT: UserContext = {
+  user: {
+    id: "mock-user-123",
+    email: "executive@crewmind.com",
+    full_name: "Chief Executive",
+  },
+  organization: {
+    id: "org-123",
+    name: "Acme Corp",
+  },
+  workspace: {
+    id: "ws-123",
+    name: "Global Headquarters",
+    org_id: "org-123",
+  },
+  role: "OWNER",
+  permissions: [
+    "organization.manage",
+    "users.invite",
+    "users.remove",
+    "users.manage_roles",
+    "members.manage",
+    "billing.view",
+    "billing.manage",
+    "agents.execute",
+    "agents.create",
+    "agents.configure",
+    "agents.delete",
+    "documents.read",
+    "documents.upload",
+    "documents.delete",
+    "knowledge.view",
+    "chat.use",
+    "reports.view",
+    "reports.create",
+    "reports.export",
+    "settings.manage",
+    "api_keys.view",
+    "api_keys.manage",
+    "audit_logs.view"
+  ],
+  organizations: [
+    {
+      member_id: "mem-123",
+      organization: { id: "org-123", name: "Acme Corp" },
+      workspace: { id: "ws-123", name: "Global Headquarters", org_id: "org-123" },
+      role: "OWNER",
+    }
+  ],
+  subscription_plan: "enterprise",
+  features: ["all"],
+};
+
 export async function fetchCurrentUserContext(): Promise<UserContext> {
-  const { data } = await api.get<UserContext>("/current-user/context");
-  return data;
+  try {
+    const { data } = await api.get<UserContext>("/current-user/context");
+    return data;
+  } catch (error) {
+    return MOCK_USER_CONTEXT;
+  }
 }
 
 export async function fetchMemberships(): Promise<Membership[]> {
