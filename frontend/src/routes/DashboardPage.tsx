@@ -153,8 +153,8 @@ export function DashboardPage() {
   const kpis = [
     { label: "Revenue run-rate", value: metrics?.revenue_run_rate ?? 0, decimals: 2, prefix: "₹", suffix: "L", trend: metrics?.revenue_trend ?? "", trendUp: metrics?.revenue_trend_up ?? true, series: revSeries, color: "#8A7BEF" },
     { label: "Net cash flow", value: metrics?.net_cash_flow ?? 0, prefix: "₹", suffix: "K/mo", trend: metrics?.cash_flow_trend ?? "", trendUp: metrics?.cash_flow_trend_up ?? true, series: cashSeries, color: "#0891CF" },
-    { label: "Open risks", value: latestReport?.risks.length ?? 0, trend: latestReport ? "flagged in latest report" : "run an analysis to populate", trendUp: false, color: "#EC4899" },
-    { label: "Opportunities", value: latestReport?.opportunities.length ?? 0, trend: latestReport ? "identified by the crew" : "run an analysis to populate", trendUp: true, color: "#059669" },
+    { label: "Open risks", value: latestReport?.risks?.length ?? 0, trend: latestReport ? "flagged in latest report" : "run an analysis to populate", trendUp: false, color: "#EC4899" },
+    { label: "Opportunities", value: latestReport?.opportunities?.length ?? 0, trend: latestReport ? "identified by the crew" : "run an analysis to populate", trendUp: true, color: "#059669" },
   ] as const;
 
   /* ---------------- widget registry ---------------- */
