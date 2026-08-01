@@ -75,7 +75,7 @@ export function AppShell({
             className={
               flush
                 ? "relative z-10 flex-1 overflow-hidden"
-                : "relative z-10 flex-1 overflow-y-auto p-4 pb-28 sm:p-8"
+                : "relative z-10 flex-1 overflow-y-auto overflow-x-hidden p-4 pb-28 sm:p-8"
             }
           >
             <div className={flush ? "h-full" : wide ? "mx-auto h-full max-w-[1400px]" : "mx-auto h-full max-w-7xl"}>

@@ -390,7 +390,7 @@ export function DashboardPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.98 }}
                   transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                  className="glass-deep absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl"
+                  className="glass-deep absolute left-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl md:left-auto md:right-0"
                 >
                   <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
                     <p className="text-sm font-bold text-white">Widgets</p>
@@ -424,9 +424,9 @@ export function DashboardPage() {
       </div>
 
       {/* KPI row */}
-      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
         {kpis.map((k, i) => (
-          <Panel key={k.label} delay={0.08 + i * 0.07} hover className="holo-sheen group relative overflow-hidden p-5">
+          <Panel key={k.label} delay={0.08 + i * 0.07} hover className="holo-sheen group relative overflow-hidden p-4 sm:p-5">
             <span aria-hidden className="absolute inset-x-6 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${k.color}88, transparent)` }} />
             <p className="text-[11px] font-semibold text-slate-400">{k.label}</p>
             <p className="mt-1.5 text-3xl font-extrabold tracking-tight text-white">
