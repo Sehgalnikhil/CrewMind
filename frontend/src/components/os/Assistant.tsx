@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, Send, Sparkles, X } from "lucide-react";
+import { ArrowUpRight, Send, Sparkles, X, Mic } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -72,6 +72,51 @@ export function Assistant() {
       setThinking(false);
     }
   }
+
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        setInput(transcript);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+      
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  const toggleListen = () => {
+    if (!recognitionRef.current) {
+      alert("Voice recognition is not supported in this browser.");
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      setInput("");
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -152,12 +197,21 @@ export function Assistant() {
 
           <div className="border-t border-white/[0.07] p-3">
             <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] py-1.5 pl-4 pr-1.5 transition-colors focus-within:border-crew-500/40">
+              <button
+                onClick={toggleListen}
+                aria-label="Voice input"
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                  isListening ? "bg-red-500/20 text-red-400 animate-pulse" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
+                }`}
+              >
+                <Mic className="h-4 w-4" />
+              </button>
               <input
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && ask()}
-                placeholder="Ask Nexus…"
+                placeholder={isListening ? "Listening..." : "Ask Nexus…"}
                 className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
               />
               <button
