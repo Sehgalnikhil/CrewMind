@@ -52,7 +52,22 @@ api.interceptors.request.use(async (config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Sometimes the backend returns double-encoded JSON or JSON strings 
+    // with the wrong Content-Type, causing Axios to leave it as a string.
+    // This safely parses it into an array or object so downstream code doesn't crash.
+    if (typeof response.data === 'string') {
+      try {
+        const parsed = JSON.parse(response.data);
+        if (parsed !== null && typeof parsed === 'object') {
+          response.data = parsed;
+        }
+      } catch (e) {
+        // ignore and return as string
+      }
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
