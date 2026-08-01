@@ -129,16 +129,16 @@ body {
 
 /* Idle float — three phases so neighbours desync */
 @keyframes float-a {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(0.001deg); }
-  50% { transform: translate3d(0, -14px, 0) rotate(0.001deg); }
+  0%, 100% { translate: 0 0; rotate: 0.001deg; }
+  50% { translate: 0 -14px; rotate: 0.001deg; }
 }
 @keyframes float-b {
-  0%, 100% { transform: translate3d(0, -10px, 0) rotate(0.001deg); }
-  50% { transform: translate3d(0, 6px, 0) rotate(0.001deg); }
+  0%, 100% { translate: 0 -10px; rotate: 0.001deg; }
+  50% { translate: 0 6px; rotate: 0.001deg; }
 }
 @keyframes float-c {
-  0%, 100% { transform: translate3d(0, 6px, 0) rotate(0.001deg); }
-  50% { transform: translate3d(0, -8px, 0) rotate(0.001deg); }
+  0%, 100% { translate: 0 6px; rotate: 0.001deg; }
+  50% { translate: 0 -8px; rotate: 0.001deg; }
 }
 .float-a { animation: float-a 7s ease-in-out infinite; }
 .float-b { animation: float-b 9s ease-in-out infinite; }

@@ -154,3 +154,118 @@ async def revoke_invitation(
         resource_id=ctx.workspace.id,
         details={"email": invitation.email}
     )
+
+class LinkInviteResponse(BaseModel):
+    token: str
+
+class LinkInviteInfoResponse(BaseModel):
+    workspace_name: str
+
+@router.post("/link", response_model=LinkInviteResponse)
+async def generate_link_invite(
+    ctx: RequestContext = Depends(RequiresPermission("users.invite")),
+    db: AsyncSession = Depends(get_db)
+) -> LinkInviteResponse:
+    if not ctx.workspace:
+        raise HTTPException(status_code=400, detail="Workspace context required")
+        
+    raw_token = secrets.token_urlsafe(32)
+    ctx.workspace.invite_token = raw_token
+    await db.commit()
+    
+    from app.core.audit import log_audit_event
+    await log_audit_event(
+        db,
+        workspace_id=ctx.workspace.id,
+        user_id=ctx.user.id,
+        action="invitation.link_generated",
+        resource_type="workspace",
+        resource_id=ctx.workspace.id,
+    )
+    return LinkInviteResponse(token=raw_token)
+
+@router.delete("/link", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_link_invite(
+    ctx: RequestContext = Depends(RequiresPermission("users.invite")),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    if not ctx.workspace:
+        raise HTTPException(status_code=400, detail="Workspace context required")
+        
+    ctx.workspace.invite_token = None
+    await db.commit()
+    
+    from app.core.audit import log_audit_event
+    await log_audit_event(
+        db,
+        workspace_id=ctx.workspace.id,
+        user_id=ctx.user.id,
+        action="invitation.link_revoked",
+        resource_type="workspace",
+        resource_id=ctx.workspace.id,
+    )
+
+@router.get("/link/{token}", response_model=LinkInviteInfoResponse)
+async def get_link_invite_info(
+    token: str,
+    db: AsyncSession = Depends(get_db)
+) -> LinkInviteInfoResponse:
+    from app.models.tenant import Workspace
+    result = await db.execute(select(Workspace).where(Workspace.invite_token == token))
+    workspace = result.scalar_one_or_none()
+    
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Invalid or expired invite link")
+        
+    return LinkInviteInfoResponse(workspace_name=workspace.name)
+
+@router.post("/link/{token}/accept", status_code=status.HTTP_200_OK)
+async def accept_link_invite(
+    token: str,
+    ctx: RequestContext = Depends(get_request_context),
+    db: AsyncSession = Depends(get_db)
+) -> dict:
+    from app.models.tenant import Workspace
+    result = await db.execute(select(Workspace).where(Workspace.invite_token == token))
+    target_workspace = result.scalar_one_or_none()
+    
+    if not target_workspace:
+        raise HTTPException(status_code=404, detail="Invalid or expired invite link")
+        
+    # Check if already a member
+    member_result = await db.execute(
+        select(OrganizationMember)
+        .where(OrganizationMember.user_id == ctx.user.id)
+        .where(OrganizationMember.workspace_id == target_workspace.id)
+    )
+    if member_result.scalar_one_or_none():
+        return {"status": "success", "workspace_id": target_workspace.id, "message": "Already a member"}
+        
+    # Get Member role
+    role_result = await db.execute(select(Role).where(Role.name == "Member"))
+    member_role = role_result.scalar_one_or_none()
+    if not member_role:
+        raise HTTPException(status_code=500, detail="Member role not found")
+        
+    # Add to workspace
+    member = OrganizationMember(
+        user_id=ctx.user.id,
+        org_id=target_workspace.org_id,
+        workspace_id=target_workspace.id,
+        role_id=member_role.id
+    )
+    db.add(member)
+    await db.commit()
+    
+    from app.core.audit import log_audit_event
+    await log_audit_event(
+        db,
+        workspace_id=target_workspace.id,
+        user_id=ctx.user.id,
+        action="invitation.link_accepted",
+        resource_type="workspace",
+        resource_id=target_workspace.id
+    )
+    
+    return {"status": "success", "workspace_id": target_workspace.id}
+

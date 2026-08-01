@@ -313,11 +313,16 @@ async def me(
     user = ctx.user
     workspace = ctx.workspace
     
+    invite_token = None
+    if workspace and "users.invite" in ctx.permissions:
+        invite_token = workspace.invite_token
+        
     # Backward compatibility with existing UserResponse schema
     return UserResponse(
         id=user.id, 
         email=user.email, 
         full_name=user.full_name, 
         workspace_id=workspace.id if workspace else "", 
-        workspace_name=workspace.name if workspace else ""
+        workspace_name=workspace.name if workspace else "",
+        invite_token=invite_token
     )

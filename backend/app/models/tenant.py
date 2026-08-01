@@ -30,6 +30,7 @@ class Workspace(Base, IdMixin, TimestampMixin):
     org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
     name: Mapped[str] = mapped_column(String(255))
     settings: Mapped[str | None] = mapped_column(Text, nullable=True)
+    invite_token: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True)
 
     organization: Mapped["Organization"] = relationship(back_populates="workspaces")
     projects: Mapped[list["Project"]] = relationship(

@@ -12,6 +12,7 @@ export interface WorkspaceSummary {
   id: string;
   name: string;
   org_id: string;
+  invite_token?: string | null;
 }
 
 export interface Membership {

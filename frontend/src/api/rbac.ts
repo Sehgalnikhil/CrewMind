@@ -134,3 +134,22 @@ export async function createOrganization(name: string): Promise<{ id: string; na
   const { data } = await api.post<{ id: string; name: string; workspace_id: string }>("/organization", { name });
   return data;
 }
+
+export async function generateInviteLink(): Promise<{ token: string }> {
+  const { data } = await api.post<{ token: string }>("/invitations/link");
+  return data;
+}
+
+export async function revokeInviteLink(): Promise<void> {
+  await api.delete("/invitations/link");
+}
+
+export async function getInviteLinkInfo(token: string): Promise<{ workspace_name: string }> {
+  const { data } = await api.get<{ workspace_name: string }>(`/invitations/link/${token}`);
+  return data;
+}
+
+export async function acceptInviteLink(token: string): Promise<{ status: string; workspace_id: string; message?: string }> {
+  const { data } = await api.post<{ status: string; workspace_id: string; message?: string }>(`/invitations/link/${token}/accept`);
+  return data;
+}

@@ -36,6 +36,7 @@ const BillingPage = lazyPage(() => import("#/routes/BillingPage"), "BillingPage"
 const AdminPage = lazyPage(() => import("#/routes/AdminPage"), "AdminPage");
 const ProfilePage = lazyPage(() => import("#/routes/ProfilePage"), "ProfilePage");
 const SettingsPage = lazyPage(() => import("#/routes/SettingsPage"), "SettingsPage");
+const InviteLinkPage = lazyPage(() => import("#/routes/InviteLinkPage"), "InviteLinkPage");
 
 function guard(node: ReactNode, route?: string) {
   const permission = route ? ROUTE_PERMISSIONS[route] : undefined;
@@ -88,6 +89,12 @@ export default function App() {
       <Route path="/admin" element={guard(<AdminPage />, "/admin")} />
       <Route path="/profile" element={guard(<ProfilePage />)} />
       <Route path="/settings" element={guard(<SettingsPage />, "/settings")} />
+      
+      <Route path="/join/:token" element={
+        <Suspense fallback={<div className="world flex h-screen items-center justify-center bg-[#05060C]"><OrbitalLoader label="loading invitation" /></div>}>
+          <InviteLinkPage />
+        </Suspense>
+      } />
 
       <Route path="/" element={<LandingPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />

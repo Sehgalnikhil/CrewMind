@@ -25,3 +25,4 @@ class UserResponse(BaseModel):
     full_name: str
     workspace_id: str
     workspace_name: str
+    invite_token: str | None = None

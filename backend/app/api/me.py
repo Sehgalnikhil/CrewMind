@@ -30,6 +30,7 @@ class WorkspaceOut(BaseModel):
     id: str
     name: str
     org_id: str
+    invite_token: str | None = None
 
 
 class MembershipOut(BaseModel):
@@ -83,7 +84,12 @@ async def get_context(
         user=UserOut(id=ctx.user.id, email=ctx.user.email, full_name=ctx.user.full_name),
         organization=OrgOut(id=ctx.organization.id, name=ctx.organization.name) if ctx.organization else None,
         workspace=(
-            WorkspaceOut(id=ctx.workspace.id, name=ctx.workspace.name, org_id=ctx.workspace.org_id)
+            WorkspaceOut(
+                id=ctx.workspace.id, 
+                name=ctx.workspace.name, 
+                org_id=ctx.workspace.org_id,
+                invite_token=ctx.workspace.invite_token if "users.invite" in (ctx.permissions or []) else None
+            )
             if ctx.workspace
             else None
         ),

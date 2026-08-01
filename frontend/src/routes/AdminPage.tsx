@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Check, Lock, ShieldCheck, Trash2 } from "lucide-react";
+import { Check, Lock, ShieldCheck, Trash2, Link as LinkIcon, Copy, RefreshCcw } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { queryClient } from "#/api/client";
-import { changeMemberRole, listAuditLogs, listMembers, listRoles, removeMember } from "#/api/rbac";
+import { changeMemberRole, listAuditLogs, listMembers, listRoles, removeMember, generateInviteLink, revokeInviteLink } from "#/api/rbac";
 import { Can } from "#/components/auth/Can";
 import { AppShell } from "#/components/layout/AppShell";
 import { BlockTitle, GlowChip, OrbitalLoader, Panel } from "#/components/os/ui";
@@ -47,7 +47,10 @@ export function AdminPage() {
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [auditFilter, setAuditFilter] = useState<AuditKind>("all");
   const [error, setError] = useState<string | null>(null);
-  const currentUserId = usePermissionStore((s) => s.context?.user.id);
+  const context = usePermissionStore((s) => s.context);
+  const currentUserId = context?.user.id;
+  const [localInviteToken, setLocalInviteToken] = useState<string | null>(context?.workspace?.invite_token ?? null);
+  const [copied, setCopied] = useState(false);
 
   const { data: members, isLoading: membersLoading } = useQuery({ queryKey: ["org-members"], queryFn: listMembers });
   const { data: roles } = useQuery({ queryKey: ["org-roles"], queryFn: listRoles });
@@ -74,6 +77,24 @@ export function AdminPage() {
       setError(null);
       setConfirmRemove(null);
       queryClient.invalidateQueries({ queryKey: ["org-members"] });
+      queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+    },
+    onError,
+  });
+
+  const generateLinkMutation = useMutation({
+    mutationFn: generateInviteLink,
+    onSuccess: (data) => {
+      setLocalInviteToken(data.token);
+      queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+    },
+    onError,
+  });
+
+  const revokeLinkMutation = useMutation({
+    mutationFn: revokeInviteLink,
+    onSuccess: () => {
+      setLocalInviteToken(null);
       queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
     },
     onError,
@@ -107,6 +128,63 @@ export function AdminPage() {
             title="Members"
             action={<ShieldCheck className="h-4 w-4 text-crew-300" />}
           />
+          
+          <Can permission="users.invite">
+            <div className="mb-6 rounded-xl border border-crew-500/20 bg-crew-500/5 p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <LinkIcon className="h-4 w-4 text-crew-400" />
+                  Shareable Invite Link
+                </h3>
+                {localInviteToken && (
+                  <button
+                    onClick={() => revokeLinkMutation.mutate()}
+                    disabled={revokeLinkMutation.isPending}
+                    className="text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-300"
+                  >
+                    Revoke Link
+                  </button>
+                )}
+              </div>
+              <p className="mb-3 text-xs text-slate-400">
+                Anyone with this link can join your workspace as a Member.
+              </p>
+              
+              {localInviteToken ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 truncate rounded-lg border border-white/10 bg-[#0B0D14] px-3 py-2 font-mono text-xs text-slate-300">
+                    {window.location.origin}/join/{localInviteToken}
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/join/${localInviteToken}`);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                  <button
+                    onClick={() => generateLinkMutation.mutate()}
+                    disabled={generateLinkMutation.isPending}
+                    title="Regenerate link"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-50"
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => generateLinkMutation.mutate()}
+                  disabled={generateLinkMutation.isPending}
+                  className="rounded-lg bg-crew-500 px-4 py-2 text-xs font-bold text-white hover:bg-crew-400 disabled:opacity-50"
+                >
+                  Generate Link
+                </button>
+              )}
+            </div>
+          </Can>
           {membersLoading ? (
             <OrbitalLoader label="loading members" />
           ) : (
