@@ -1,0 +1,43 @@
+services:
+  # Database Service
+  - type: psql
+    name: crewmind-db
+    plan: free # Change to starter or standard for production
+    databaseName: crewmind
+    user: crewmind
+
+  # Backend Web Service
+  - type: web
+    name: crewmind-backend
+    env: docker
+    region: oregon
+    plan: free
+    rootDir: backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crewmind-db
+          property: connectionString
+      - key: CORS_ORIGINS
+        value: '["https://crewmindd.netlify.app", "http://localhost:5173"]'
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: SLACK_CLIENT_ID
+        sync: false
+      - key: SLACK_CLIENT_SECRET
+        sync: false

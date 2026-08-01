@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
-
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
@@ -13,6 +13,15 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     database_url: str = f"sqlite+aiosqlite:///{BACKEND_DIR / 'crewmind.db'}"
+    
+    @field_validator("database_url")
+    @classmethod
+    def assemble_db_connection(cls, v: str) -> str:
+        if v and v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+asyncpg://", 1)
+        if v and v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
 
     jwt_secret_key: str = "dev-secret-change-me"
     jwt_algorithm: str = "HS256"
