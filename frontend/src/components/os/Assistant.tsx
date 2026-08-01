@@ -14,8 +14,8 @@ interface AssistantTurn {
   toLabel?: string;
 }
 
-/* Nexus routes intent locally — a lightweight concierge over the OS. */
-const INTENTS: { match: RegExp; reply: string; to: string; toLabel: string }[] = [
+const INTENTS: { match: RegExp; reply: string; to?: string; toLabel?: string }[] = [
+  { match: /\b(hi|hello|hey|greetings|howdy)\b/i, reply: "Hello, Executive. I'm Nexus, your OS concierge. Ask me for a specific tool, or take complex requests to the Boardroom." },
   { match: /war\s*room|debate|deliberat/i, reply: "Convening the boardroom. The five executives will take your question to the strategy table.", to: "/war-room", toLabel: "Open War Room" },
   { match: /risk|runway|cash|burn/i, reply: "Ledger tracks runway and burn on Mission Control — the Risk Radar widget has the live picture.", to: "/dashboard", toLabel: "Open Mission Control" },
   { match: /simulat|what if|scenario/i, reply: "The Scenario Simulator can stress-test that decision before you commit to it.", to: "/simulator", toLabel: "Open Simulator" },
