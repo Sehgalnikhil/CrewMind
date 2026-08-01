@@ -65,6 +65,8 @@ class Subscription(Base, IdMixin, TimestampMixin):
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
     plan_name: Mapped[str] = mapped_column(String(100)) # e.g. "free", "pro", "enterprise"
     status: Mapped[str] = mapped_column(String(50), default="active") # active | canceled | past_due
+    billing_cycle: Mapped[str] = mapped_column(String(20), default="monthly") # monthly | annual
+    plan_price: Mapped[int] = mapped_column(default=0) # in paise
     razorpay_subscription_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     razorpay_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     razorpay_plan_id: Mapped[str | None] = mapped_column(String(255), nullable=True)

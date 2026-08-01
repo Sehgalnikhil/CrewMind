@@ -10,6 +10,7 @@ from app.core.security import decode_access_token
 from app.models.tenant import Organization, Workspace, Subscription
 from app.models.rbac import OrganizationMember, Role, Permission, RolePermission
 from app.models.user import User
+from app.core.billing_catalog import get_plan
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
@@ -191,3 +192,16 @@ def RequiresPermission(permission: str):
             raise HTTPException(status_code=403, detail=f"Requires permission: {permission}")
         return ctx
     return permission_dependency
+
+
+def RequiresEntitlement(feature: str):
+    async def entitlement_dependency(ctx: RequestContext = Depends(get_request_context)):
+        plan_name = "starter"
+        if ctx.subscription and ctx.subscription.status == "active":
+            plan_name = ctx.subscription.plan_name
+            
+        plan = get_plan(plan_name)
+        if not plan or feature not in plan.features:
+            raise HTTPException(status_code=402, detail=f"Requires {feature} entitlement. Please upgrade your plan.")
+        return ctx
+    return entitlement_dependency

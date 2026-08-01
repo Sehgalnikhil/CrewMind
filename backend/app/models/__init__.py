@@ -12,6 +12,7 @@ from app.models.user import User
 from app.models.tenant import Organization, Workspace, Project, Subscription, WorkspaceFeature
 from app.models.rbac import Role, Permission, RolePermission, OrganizationMember
 from app.models.observability import AuditLog, UsageRecord
+from app.models.usage import WorkspaceUsage
 from app.models.security import (
     RefreshToken, UserSession, UserSecurity, OAuthProvider, 
     OrganizationDomain, WorkspaceInvitation, APIKey
@@ -46,6 +47,7 @@ __all__ = [
     "memory_topic_links",
     "AuditLog",
     "UsageRecord",
+    "WorkspaceUsage",
     "RefreshToken",
     "UserSession",
     "UserSecurity",

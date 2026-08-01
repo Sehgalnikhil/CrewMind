@@ -7,8 +7,7 @@ import {
 import { useRazorpay } from "react-razorpay";
 import { useState } from "react";
 
-import { listDocuments } from "#/api/documents";
-import { createOrder, verifyPayment } from "#/api/billing";
+import { createOrder, verifyPayment, getUsage } from "#/api/billing";
 import { Can } from "#/components/auth/Can";
 import { AppShell } from "#/components/layout/AppShell";
 import { BlockTitle, GlowChip, Panel } from "#/components/os/ui";
@@ -19,40 +18,55 @@ import { cn } from "#/lib/utils";
 const PLANS = [
   {
     name: "Starter",
+    id: "starter",
     priceMonthly: "Free",
     priceAnnual: "Free",
-    description: "For students and evaluation.",
-    features: ["AI Chat", "20 documents", "1 workspace", "Basic Executive Memory", "Limited AI requests", "Community support"],
-    buttonText: "Start Free",
+    description: "For individuals and exploration.",
+    features: ["AI Chat", "20 documents", "1 workspace", "Basic Executive Memory", "Community support"],
+    buttonText: "Current Plan",
     popular: false,
     color: "#8A7BEF",
   },
   {
     name: "Founder",
-    priceMonthly: "₹1,499",
-    priceAnnual: "₹1,199",
-    description: "For solo founders and startups.",
-    features: ["All 5 AI Executives", "250 documents", "Executive Memory", "Reports", "Knowledge Graph", "Up to 5 users"],
+    id: "founder",
+    priceMonthly: "₹2,999",
+    priceAnnual: "₹2,399",
+    description: "For solo founders and early teams.",
+    features: ["Everything in Starter", "250 documents", "Executive Memory", "Reports", "Knowledge Graph", "Up to 5 users", "2 workspaces"],
     buttonText: "Upgrade to Founder",
     popular: false,
     color: "#0891CF",
   },
   {
     name: "Growth",
-    priceMonthly: "₹4,999",
-    priceAnnual: "₹3,999",
-    description: "For scaling teams and organizations.",
-    features: ["Everything in Founder", "War Room", "Scenario Simulator", "Digital Twin", "Unlimited documents", "Advanced analytics", "Team collaboration", "Priority support"],
+    id: "growth",
+    priceMonthly: "₹9,999",
+    priceAnnual: "₹7,999",
+    description: "For scaling organizations.",
+    features: ["Everything in Founder", "War Room", "Digital Twin", "Simulator", "1000 documents", "Up to 25 users", "5 workspaces"],
     buttonText: "Upgrade to Growth",
     popular: true,
     color: "#059669",
   },
   {
+    name: "Business",
+    id: "business",
+    priceMonthly: "₹24,999",
+    priceAnnual: "₹19,999",
+    description: "For established businesses.",
+    features: ["Everything in Growth", "5000 documents", "Up to 100 users", "20 workspaces", "Advanced RBAC", "API Access", "Audit Logs"],
+    buttonText: "Upgrade to Business",
+    popular: false,
+    color: "#eab308",
+  },
+  {
     name: "Enterprise",
+    id: "enterprise",
     priceMonthly: "Custom",
     priceAnnual: "Custom",
-    description: "For large enterprises.",
-    features: ["Everything in Growth", "SSO", "Audit Logs", "API Access", "Custom integrations", "Dedicated onboarding", "White-label deployment", "SLA support"],
+    description: "For large-scale deployments.",
+    features: ["Everything in Business", "Unlimited documents", "Unlimited users", "SSO", "Dedicated Support", "Custom SLAs", "White-label"],
     buttonText: "Talk to Sales",
     popular: false,
     color: "#D97706",
@@ -125,8 +139,7 @@ const INVOICES = [
 ];
 
 export function BillingPage() {
-  const { data: documents } = useQuery({ queryKey: ["documents"], queryFn: listDocuments });
-  const docCount = documents?.length ?? 0;
+  const { data: usageData } = useQuery({ queryKey: ["usage"], queryFn: getUsage });
   
   const { Razorpay } = useRazorpay();
   const [isAnnual, setIsAnnual] = useState(false);
@@ -162,7 +175,14 @@ export function BillingPage() {
       }
       if (planName === "Starter") return;
       
-      const { order_id, key_id } = await createOrder({ plan_name: planName });
+      const plan = PLANS.find(p => p.name === planName);
+      if (!plan) return;
+
+      const { order_id, key_id, amount } = await createOrder({ plan_name: plan.id, is_annual: isAnnual });
+      if (amount === 0) {
+          alert("Subscribed successfully!");
+          return;
+      }
       
       const options = {
         key: key_id,
@@ -191,12 +211,11 @@ export function BillingPage() {
     subscribe(planName);
   };
 
-  const usage = [
-    { label: "AI Requests Used", used: 34, limit: 100, color: "#8A7BEF", unit: "" },
-    { label: "Documents Indexed", used: docCount, limit: 250, color: "#0891CF", unit: "" },
+  const usage = usageData?.usage || [
+    { label: "AI Requests Used", used: 0, limit: 100, color: "#8A7BEF", unit: "" },
     { label: "Active AI Executives", used: 5, limit: 5, color: "#059669", unit: "" },
-    { label: "Memory Storage", used: 61, limit: 100, color: "#D97706", unit: "GB" },
-    { label: "Team Members", used: 3, limit: 5, color: "#f43f5e", unit: "" },
+    { label: "Memory Storage", used: 0, limit: 1, color: "#D97706", unit: "GB" },
+    { label: "Team Members", used: 1, limit: 1, color: "#f43f5e", unit: "" },
     { label: "Workspaces", used: 1, limit: 1, color: "#8b5cf6", unit: "" },
   ];
 
@@ -234,6 +253,18 @@ export function BillingPage() {
         accent="organization."
         body="An AI Executive Operating System designed to run your business."
       />
+
+      {usageData && (
+        <div className="mb-4 flex items-center gap-3">
+          <p className="text-sm font-semibold text-slate-300">
+            Current Plan: <span className="text-white font-bold">{usageData.plan.name}</span>
+          </p>
+          <GlowChip color={usageData.plan.status === "active" ? "#059669" : "#D97706"}>
+            {usageData.plan.status}
+          </GlowChip>
+          <p className="text-xs text-slate-500 font-medium">Billed {usageData.plan.billing_cycle}</p>
+        </div>
+      )}
 
       {/* Usage Dashboard */}
       <div className="mb-8 mt-4">
