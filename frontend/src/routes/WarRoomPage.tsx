@@ -463,7 +463,7 @@ export function WarRoomPage() {
 
   return (
     <AppShell title="War Room" wide flush>
-      <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 pb-28 sm:p-6 xl:flex-row xl:overflow-hidden xl:pb-6">
+      <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto p-4 pb-28 sm:p-6 xl:flex-row xl:overflow-hidden xl:pb-6">
         {/* main stage */}
         <div className="flex min-h-0 flex-none xl:flex-1 flex-col gap-4">
           <Panel deep className="scanline relative shrink-0 overflow-hidden px-5 pb-2 pt-4">

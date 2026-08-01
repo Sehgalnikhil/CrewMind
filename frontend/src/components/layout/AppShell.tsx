@@ -74,11 +74,11 @@ export function AppShell({
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
             className={
               flush
-                ? "relative z-10 flex-1 overflow-hidden"
+                ? "relative z-10 flex flex-col flex-1 overflow-hidden"
                 : "relative z-10 flex-1 overflow-y-auto overflow-x-hidden p-4 pb-28 sm:p-8"
             }
           >
-            <div className={flush ? "h-full" : wide ? "mx-auto h-full max-w-[1400px]" : "mx-auto h-full max-w-7xl"}>
+            <div className={flush ? "flex flex-col flex-1 min-h-0" : wide ? "mx-auto h-full max-w-[1400px]" : "mx-auto h-full max-w-7xl"}>
               {children}
             </div>
           </motion.main>
