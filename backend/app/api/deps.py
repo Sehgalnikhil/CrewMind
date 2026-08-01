@@ -114,6 +114,17 @@ async def get_request_context(
 
     ctx = RequestContext(user=user)
 
+    if workspace_id:
+        # Check if the provided workspace_id is actually valid for this user
+        check_stmt = select(OrganizationMember).where(
+            OrganizationMember.user_id == user.id,
+            OrganizationMember.workspace_id == workspace_id
+        )
+        check_result = await db.execute(check_stmt)
+        if not check_result.scalars().first():
+            # Workspace is stale or invalid, clear it so we fallback to a valid one
+            workspace_id = None
+
     if not workspace_id:
         stmt = select(OrganizationMember).where(OrganizationMember.user_id == user.id)
         result = await db.execute(stmt)
