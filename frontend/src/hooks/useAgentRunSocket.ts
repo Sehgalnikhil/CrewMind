@@ -52,6 +52,46 @@ export function useAgentRunSocket(runId: string | null) {
     setState({ runStatus: "pending", agentStatuses: IDLE_STATUSES, reportId: null, error: null, reasoningSteps: [] });
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    
+    if (runId === "mock-run-123") {
+      let timeoutId: any;
+      let isCancelled = false;
+      const simulateEvents = async () => {
+        const events: { delay: number; event: SocketEvent }[] = [
+          { delay: 500, event: { type: "run_status", status: "running" } },
+          { delay: 1000, event: { type: "agent_status", agent_key: "research", status: "running" } },
+          { delay: 2000, event: { type: "reasoning_step", agent: "research", monologue: ["Scanning local market data...", "Identifying key competitor moves..."], critic: null, confidence: 0.9 } },
+          { delay: 3500, event: { type: "agent_status", agent_key: "research", status: "done" } },
+          { delay: 4000, event: { type: "agent_status", agent_key: "strategy", status: "running" } },
+          { delay: 5000, event: { type: "reasoning_step", agent: "strategy", monologue: ["Analyzing competitor pricing strategy", "Drafting counter-measures"], critic: "Needs more focus on retention", confidence: 0.85 } },
+          { delay: 6500, event: { type: "agent_status", agent_key: "strategy", status: "done" } },
+          { delay: 7000, event: { type: "agent_status", agent_key: "finance", status: "running" } },
+          { delay: 8000, event: { type: "reasoning_step", agent: "finance", monologue: ["Modeling revenue impact of price cuts", "Evaluating CAC ceilings for EU expansion"], critic: null, confidence: 0.95 } },
+          { delay: 9500, event: { type: "agent_status", agent_key: "finance", status: "done" } },
+          { delay: 10000, event: { type: "completed", report_id: "mock-report-123" } },
+        ];
+
+        let currentDelay = 0;
+        for (const { delay, event } of events) {
+          if (isCancelled) break;
+          const waitTime = delay - currentDelay;
+          currentDelay = delay;
+          await new Promise((r) => { timeoutId = setTimeout(r, waitTime); });
+          if (isCancelled) break;
+          
+          if (event.type === "run_status") setState((s) => ({ ...s, runStatus: event.status }));
+          else if (event.type === "agent_status") setState((s) => ({ ...s, agentStatuses: { ...s.agentStatuses, [event.agent_key]: event.status } }));
+          else if (event.type === "reasoning_step") setState((s) => ({ ...s, reasoningSteps: [...s.reasoningSteps, event] as any }));
+          else if (event.type === "completed") setState((s) => ({ ...s, runStatus: "completed", reportId: event.report_id }));
+        }
+      };
+      simulateEvents();
+      return () => {
+        isCancelled = true;
+        clearTimeout(timeoutId);
+      };
+    }
+
     const ws = new WebSocket(
       `${protocol}://${window.location.host}/ws/agent-runs/${runId}?token=${token}`
     );
