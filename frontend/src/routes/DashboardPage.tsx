@@ -424,9 +424,9 @@ export function DashboardPage() {
       </div>
 
       {/* KPI row */}
-      <div className="mb-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((k, i) => (
-          <Panel key={k.label} delay={0.08 + i * 0.07} hover className="holo-sheen group relative overflow-hidden p-4 sm:p-5">
+          <Panel key={k.label} delay={0.08 + i * 0.07} hover className="holo-sheen group relative overflow-hidden p-4 sm:p-5 min-w-0">
             <span aria-hidden className="absolute inset-x-6 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${k.color}88, transparent)` }} />
             <p className="text-[11px] font-semibold text-slate-400">{k.label}</p>
             <p className="mt-1.5 text-3xl font-extrabold tracking-tight text-white">
@@ -460,7 +460,7 @@ export function DashboardPage() {
                   key={id}
                   layout
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className={cn(wide && "md:col-span-2")}
+                  className={cn("min-w-0", wide && "md:col-span-2")}
                   onPointerEnter={() => {
                     const d = draggingRef.current;
                     if (d && d !== id) swap(d, id);
