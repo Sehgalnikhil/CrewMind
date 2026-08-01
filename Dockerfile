@@ -15,13 +15,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy pyproject.toml
-COPY pyproject.toml ./
+COPY backend/pyproject.toml ./
 
 # Install python dependencies
 RUN pip install --no-cache-dir -e .
 
 # Copy application code
-COPY . .
+COPY backend/ .
 
 # Expose port (Render sets $PORT, default to 8000)
 ENV PORT=8000
