@@ -69,7 +69,7 @@ export const knowledgeApi = {
   getTopics: async (_orgId: string) => {
     try {
       const res = await api.get<Topic[]>(`/knowledge/topics`);
-      if (res.data && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
     } catch (err) {}
     return MOCK_TOPICS;
   },
