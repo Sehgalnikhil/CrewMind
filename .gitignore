@@ -21,3 +21,4 @@ frontend/*.tsbuildinfo
 # Editors / OS
 .DS_Store
 *.log
+backend/db.sqlite3

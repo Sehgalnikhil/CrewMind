@@ -148,7 +148,7 @@ const INVOICES = [
 export function BillingPage() {
   const { data: usageData } = useQuery({ queryKey: ["usage"], queryFn: getUsage });
   
-  const { Razorpay } = useRazorpay();
+  const { error: rzpError, isLoading: isRzpLoading, Razorpay } = useRazorpay();
   const [isAnnual, setIsAnnual] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
   const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
@@ -156,8 +156,12 @@ export function BillingPage() {
   const [addingAddon, setAddingAddon] = useState<string | null>(null);
   const [addedAddons, setAddedAddons] = useState<string[]>([]);
 
-  const { mutate: subscribeAddon } = useMutation({
+  const { mutate: subscribeAddon, isPending: isAddonPending } = useMutation({
     mutationFn: async (addonId: string) => {
+      if (!Razorpay) {
+        alert("Payment system is still loading or failed to load. Please disable adblockers and try again.");
+        return;
+      }
       setAddingAddon(addonId);
       try {
         const { order_id, key_id, amount } = await createOrder({ plan_name: "addon", addon_id: addonId });
@@ -222,6 +226,11 @@ export function BillingPage() {
       }
       if (planName === "Starter") return;
       
+      if (!Razorpay) {
+        alert("Payment system is still loading or failed to load. Please disable adblockers and try again.");
+        return;
+      }
+
       const plan = PLANS.find(p => p.name === planName);
       if (!plan) return;
 
@@ -252,6 +261,10 @@ export function BillingPage() {
       const rzp = new Razorpay(options as any);
       rzp.open();
     },
+    onError: (error: any) => {
+      console.error(error);
+      alert(`Failed to start checkout: ${error.response?.data?.detail || error.message}`);
+    }
   });
 
   const handleSubscribe = (planName: string) => {

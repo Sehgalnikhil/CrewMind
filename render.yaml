@@ -1,15 +1,15 @@
-services:
+databases:
   # Database Service
-  - type: psql
-    name: crewmind-db
+  - name: crewmind-db
     plan: free # Change to starter or standard for production
     databaseName: crewmind
     user: crewmind
 
+services:
   # Backend Web Service
   - type: web
     name: crewmind-backend
-    env: docker
+    runtime: docker
     region: oregon
     plan: free
     healthCheckPath: /api/health
