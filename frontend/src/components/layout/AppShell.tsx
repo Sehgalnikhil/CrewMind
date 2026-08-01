@@ -65,7 +65,7 @@ export function AppShell({
 
         <Sidebar mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
 
-        <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
+        <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
           <Topbar title={title} onOpenMenu={() => setMobileNavOpen(true)} onOpenPalette={() => setPaletteOpen(true)} />
           <motion.main
             key={title}
