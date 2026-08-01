@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import agent_runs, agent_state, auth, chat, documents, me, members, memory, metrics, reports, status, ws, knowledge, system, sessions, mfa, invitations, organization, api_keys, billing, war_room
+from app.api import agent_runs, agent_state, auth, chat, documents, me, members, memory, metrics, reports, status, ws, knowledge, system, sessions, mfa, invitations, organization, api_keys, billing, war_room, integrations
 from app.core.config import get_settings
 from app.core.database import init_db
 import logging
@@ -42,6 +42,7 @@ app.include_router(billing.router)
 app.include_router(me.router)
 app.include_router(members.router)
 app.include_router(war_room.router, prefix="/api/warroom", tags=["War Room"])
+app.include_router(integrations.router)
 
 
 import asyncio

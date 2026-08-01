@@ -1,11 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Building2, Check, ChevronDown } from "lucide-react";
+import { Building2, Check, ChevronDown, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { queryClient } from "#/api/client";
 import { ROLE_LABELS } from "#/core/permissions/roles";
 import { usePermissionStore } from "#/stores/permissionStore";
+import { createOrganization, fetchCurrentUserContext } from "#/api/rbac";
 
 /**
  * Organization switcher — for users who belong to several organizations.
@@ -20,6 +21,8 @@ export function OrgSwitcher() {
   const context = usePermissionStore((s) => s.context);
   const workspaceId = usePermissionStore((s) => s.workspaceId);
   const switchWorkspace = usePermissionStore((s) => s.switchWorkspace);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newOrgName, setNewOrgName] = useState("");
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -34,11 +37,27 @@ export function OrgSwitcher() {
 
   function pick(nextWorkspaceId: string) {
     setOpen(false);
+    setShowCreate(false);
     if (nextWorkspaceId === workspaceId) return;
     switchWorkspace(nextWorkspaceId);
     // Every cached query is scoped to the previous workspace — drop them all.
     queryClient.clear();
     navigate("/dashboard");
+  }
+
+  async function handleCreateOrg(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newOrgName.trim()) return;
+    try {
+      const res = await createOrganization(newOrgName.trim());
+      const ctx = await fetchCurrentUserContext();
+      usePermissionStore.getState().setContext(ctx);
+      pick(res.workspace_id);
+      setShowCreate(false);
+      setNewOrgName("");
+    } catch (err) {
+      console.error("Failed to create organization", err);
+    }
   }
 
   return (
@@ -67,30 +86,57 @@ export function OrgSwitcher() {
             transition={{ duration: 0.16 }}
             className="glass-deep absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-2xl border border-white/10 p-1.5"
           >
-            <p className="px-3 pb-1 pt-2 font-mono text-[9px] uppercase tracking-[0.28em] text-slate-500">
-              Your organizations
-            </p>
-            {memberships.map((m) => {
-              const active = m.workspace.id === workspaceId;
-              return (
-                <button
-                  key={m.member_id}
-                  onClick={() => pick(m.workspace.id)}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-white/[0.06]"
-                >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]">
-                    <Building2 className="h-4 w-4 text-slate-400" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">{m.organization.name}</p>
-                    <p className="truncate text-[11px] text-slate-500">
-                      {m.workspace.name} · {ROLE_LABELS[m.role] ?? m.role}
-                    </p>
-                  </div>
-                  {active && <Check className="h-4 w-4 shrink-0 text-crew-300" />}
-                </button>
-              );
-            })}
+            {showCreate ? (
+              <form onSubmit={handleCreateOrg} className="p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">Create Organization</p>
+                <input
+                  autoFocus
+                  value={newOrgName}
+                  onChange={(e) => setNewOrgName(e.target.value)}
+                  placeholder="Organization name"
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-crew-500 mb-3"
+                />
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setShowCreate(false)} className="flex-1 px-3 py-1.5 text-xs font-semibold text-slate-400 hover:bg-white/[0.05] rounded-lg transition-colors">Cancel</button>
+                  <button type="submit" disabled={!newOrgName.trim()} className="flex-1 px-3 py-1.5 text-xs font-semibold bg-crew-500 hover:bg-crew-400 disabled:opacity-50 text-white rounded-lg transition-colors">Create</button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <p className="px-3 pb-1 pt-2 font-mono text-[9px] uppercase tracking-[0.28em] text-slate-500">
+                  Your organizations
+                </p>
+                {memberships.map((m) => {
+                  const active = m.workspace.id === workspaceId;
+                  return (
+                    <button
+                      key={m.member_id}
+                      onClick={() => pick(m.workspace.id)}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-white/[0.06]"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]">
+                        <Building2 className="h-4 w-4 text-slate-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-white">{m.organization.name}</p>
+                        <p className="truncate text-[11px] text-slate-500">
+                          {m.workspace.name} · {ROLE_LABELS[m.role] ?? m.role}
+                        </p>
+                      </div>
+                      {active && <Check className="h-4 w-4 shrink-0 text-crew-300" />}
+                    </button>
+                  );
+                })}
+                <div className="border-t border-white/[0.07] mt-1 pt-1">
+                  <button onClick={() => setShowCreate(true)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-white/[0.06]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]">
+                      <Plus className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <span className="text-sm font-semibold text-white">Add organization</span>
+                  </button>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

@@ -6,9 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import json
 import secrets
 
-from app.api.deps import RequestContext, get_request_context, RequiresPermission
+from app.api.deps import RequestContext, get_request_context, RequiresPermission, get_current_user
 from app.core.database import get_db
-from app.models.tenant import Organization
+from app.models.tenant import Organization, Workspace
+from app.models.rbac import OrganizationMember, Role
+from app.models.user import User
 from app.models.security import OrganizationDomain
 
 router = APIRouter(prefix="/api/organization", tags=["organization"])
@@ -167,4 +169,44 @@ async def verify_domain(
         domain=domain_record.domain,
         verification_token=domain_record.verification_token,
         verified_at=domain_record.verified_at
+    )
+
+
+class CreateOrganizationRequest(BaseModel):
+    name: str
+
+class CreateOrganizationResponse(BaseModel):
+    id: str
+    name: str
+    workspace_id: str
+
+@router.post("", response_model=CreateOrganizationResponse, status_code=status.HTTP_201_CREATED)
+async def create_organization(
+    payload: CreateOrganizationRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> CreateOrganizationResponse:
+    org = Organization(name=payload.name)
+    db.add(org)
+    await db.commit()
+
+    workspace = Workspace(name="Default Workspace", org_id=org.id)
+    db.add(workspace)
+    await db.commit()
+
+    admin_role = (await db.execute(select(Role).where(Role.name.ilike("admin")))).scalar_one_or_none()
+    if admin_role:
+        member = OrganizationMember(
+            user_id=user.id,
+            org_id=org.id,
+            workspace_id=workspace.id,
+            role_id=admin_role.id
+        )
+        db.add(member)
+        await db.commit()
+
+    return CreateOrganizationResponse(
+        id=org.id,
+        name=org.name,
+        workspace_id=workspace.id
     )

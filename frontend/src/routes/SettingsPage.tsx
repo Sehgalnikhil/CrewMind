@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Building2, CheckCircle2, Cpu, ShieldCheck, User, XCircle } from "lucide-react";
 
 import { getStatus } from "#/api/status";
+import { getIntegrations, getAuthUrl, disconnectIntegration } from "#/api/integrations";
 import { AppShell } from "#/components/layout/AppShell";
 import { BlockTitle, GlowChip, OrbitalLoader, Panel } from "#/components/os/ui";
 import { ROLE_LABELS } from "#/core/permissions/roles";
@@ -31,7 +32,26 @@ function RoleChip() {
 
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
-  const { data: status, isLoading } = useQuery({ queryKey: ["status"], queryFn: getStatus });
+  const { data: status, isLoading: statusLoading } = useQuery({ queryKey: ["status"], queryFn: getStatus });
+  const { data: integrations, refetch: refetchIntegrations } = useQuery({ queryKey: ["integrations"], queryFn: getIntegrations });
+
+  const handleConnect = async (provider: string) => {
+    try {
+      const { url } = await getAuthUrl(provider);
+      window.location.href = url;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleDisconnect = async (provider: string) => {
+    try {
+      await disconnectIntegration(provider);
+      refetchIntegrations();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <AppShell title="Settings">
@@ -112,7 +132,7 @@ export function SettingsPage() {
               )
             }
           />
-          {isLoading ? (
+          {statusLoading ? (
             <OrbitalLoader label="checking systems" />
           ) : (
             <dl className="space-y-2">
@@ -140,13 +160,50 @@ export function SettingsPage() {
               )}
             </dl>
           )}
-          {!isLoading && !status?.llm_configured && (
+          {!statusLoading && !status?.llm_configured && (
             <p className="mt-3 rounded-2xl border border-[#D97706]/25 bg-[#D97706]/[0.08] px-4 py-3 text-xs leading-relaxed text-[#f3c583]">
               Add <code className="rounded bg-white/[0.08] px-1.5 py-0.5 font-mono text-[11px]">GEMINI_API_KEY</code> to{" "}
               <code className="rounded bg-white/[0.08] px-1.5 py-0.5 font-mono text-[11px]">backend/.env</code> and restart the
               server to wake your executive team.
             </p>
           )}
+        </Panel>
+
+        {/* integrations */}
+        <Panel delay={0.24} className="p-6">
+          <BlockTitle label="connected apps" title="Integrations" />
+          <div className="space-y-2">
+            {[
+              { id: "github", name: "GitHub", desc: "Sync repositories for code intelligence" },
+              { id: "slack", name: "Slack", desc: "Team notifications and intelligent summaries" },
+              { id: "google", name: "Google Workspace", desc: "Sync Google Drive, Docs, and Gmail" },
+            ].map((app) => {
+              const isConnected = integrations?.some((i) => i.provider === app.id);
+              return (
+                <div key={app.id} className="flex items-center justify-between gap-4 rounded-2xl border border-white/[0.05] bg-white/[0.02] px-4 py-3">
+                  <div>
+                    <p className="text-sm font-bold text-white">{app.name}</p>
+                    <p className="text-xs text-slate-500">{app.desc}</p>
+                  </div>
+                  {isConnected ? (
+                    <button
+                      onClick={() => handleDisconnect(app.id)}
+                      className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/20"
+                    >
+                      Disconnect
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleConnect(app.id)}
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/10"
+                    >
+                      Connect
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </Panel>
 
         {/* data & security */}

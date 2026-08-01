@@ -44,6 +44,9 @@ class Workspace(Base, IdMixin, TimestampMixin):
     subscriptions: Mapped[list["Subscription"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan"
     )
+    integrations: Mapped[list["Integration"]] = relationship(
+        back_populates="workspace", cascade="all, delete-orphan"
+    )
 
 
 class WorkspaceFeature(Base, IdMixin, TimestampMixin):
@@ -77,3 +80,15 @@ class Project(Base, IdMixin, TimestampMixin):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     workspace: Mapped["Workspace"] = relationship(back_populates="projects")
+
+
+class Integration(Base, IdMixin, TimestampMixin):
+    __tablename__ = "integrations"
+
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
+    provider: Mapped[str] = mapped_column(String(50), index=True) # "github", "slack", "google"
+    access_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    refresh_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[str | None] = mapped_column(Text, nullable=True) # extra config
+
+    workspace: Mapped["Workspace"] = relationship(back_populates="integrations")

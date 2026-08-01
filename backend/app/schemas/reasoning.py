@@ -3,6 +3,13 @@
 from pydantic import BaseModel, Field
 
 
+from typing import Any
+from pydantic import BaseModel, Field
+
+class ToolAction(BaseModel):
+    tool_name: str = Field(description="Name of the tool to execute (e.g., 'github_search_repositories', 'github_read_issue', 'google_search_drive', 'slack_search_messages', 'slack_send_message')")
+    arguments: dict[str, Any] = Field(description="Arguments required for the tool. For github: query, repo_full_name, issue_number. For google: query, document_id. For slack: query, channel, text.")
+
 class SpawnedTask(BaseModel):
     agent_key: str = Field(description="The key of the agent to delegate to (e.g., 'research', 'legal').")
     title: str = Field(description="A short title for the task.")
@@ -20,6 +27,10 @@ class AgentReasoningOutput(BaseModel):
     spawned_tasks: list[SpawnedTask] | None = Field(
         default=None,
         description="If you realize another agent (e.g., research, finance, operations, legal, strategy) needs to perform a sub-task for you to succeed, you can spawn tasks here. Only use this if absolutely necessary."
+    )
+    tool_actions: list[ToolAction] | None = Field(
+        default=None,
+        description="A list of external tools to call right now to gather information (e.g., fetching a GitHub issue or searching Slack). If you provide tool actions, wait for the system to return the results before answering the user."
     )
     final_response: str = Field(
         description="The final markdown-formatted answer to the user or orchestrator."

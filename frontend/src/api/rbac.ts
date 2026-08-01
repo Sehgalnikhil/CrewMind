@@ -72,3 +72,8 @@ export async function createInvitation(email: string, roleId: string): Promise<I
   const { data } = await api.post<InvitationOut>("/invitations", { email, role_id: roleId });
   return data;
 }
+
+export async function createOrganization(name: string): Promise<{ id: string; name: string; workspace_id: string }> {
+  const { data } = await api.post<{ id: string; name: string; workspace_id: string }>("/organization", { name });
+  return data;
+}

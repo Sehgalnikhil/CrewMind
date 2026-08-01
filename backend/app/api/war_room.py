@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.core.database import AsyncSessionLocal
-from app.api.deps import CurrentMember
+from app.api.deps import RequestContext, get_request_context
 from app.models.war_room import WarRoomSession, WarRoomTurn
 from app.schemas.war_room import (
     WarRoomSessionCreate,
@@ -17,12 +17,12 @@ router = APIRouter()
 @router.post("", response_model=WarRoomSessionDetailResponse, status_code=status.HTTP_201_CREATED)
 async def create_war_room_session(
     payload: WarRoomSessionCreate,
-    member: CurrentMember,
+    ctx: RequestContext = Depends(get_request_context),
 ) -> WarRoomSessionDetailResponse:
     """Create a new mocked War Room session with its turns for playback."""
     async with AsyncSessionLocal() as db:
         session = WarRoomSession(
-            workspace_id=member.workspace_id,
+            workspace_id=ctx.workspace.id,
             question=payload.question,
             verdict_json=payload.verdict,
             status="running",
@@ -60,12 +60,12 @@ async def create_war_room_session(
 
 
 @router.get("", response_model=list[WarRoomSessionResponse])
-async def list_war_room_sessions(member: CurrentMember) -> list[WarRoomSession]:
+async def list_war_room_sessions(ctx: RequestContext = Depends(get_request_context)) -> list[WarRoomSession]:
     """List all war room sessions for the current workspace."""
     async with AsyncSessionLocal() as db:
         stmt = (
             select(WarRoomSession)
-            .where(WarRoomSession.workspace_id == member.workspace_id)
+            .where(WarRoomSession.workspace_id == ctx.workspace.id)
             .order_by(WarRoomSession.created_at.desc())
         )
         result = await db.execute(stmt)
@@ -73,7 +73,7 @@ async def list_war_room_sessions(member: CurrentMember) -> list[WarRoomSession]:
 
 
 @router.get("/{session_id}", response_model=WarRoomSessionDetailResponse)
-async def get_war_room_session(session_id: str, member: CurrentMember) -> WarRoomSession:
+async def get_war_room_session(session_id: str, ctx: RequestContext = Depends(get_request_context)) -> WarRoomSession:
     """Get a specific war room session with all turns."""
     async with AsyncSessionLocal() as db:
         stmt = (
@@ -81,7 +81,7 @@ async def get_war_room_session(session_id: str, member: CurrentMember) -> WarRoo
             .options(selectinload(WarRoomSession.turns))
             .where(
                 WarRoomSession.id == session_id,
-                WarRoomSession.workspace_id == member.workspace_id,
+                WarRoomSession.workspace_id == ctx.workspace.id,
             )
         )
         result = await db.execute(stmt)

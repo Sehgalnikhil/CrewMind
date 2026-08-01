@@ -296,7 +296,7 @@ export function WorldFooter() {
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((l) => (
                   <li key={l}>
-                    <a href="#" className="text-[13px] text-slate-500 transition-colors hover:text-white">
+                    <a href={l === "Dashboard" ? "/dashboard" : "#"} className="text-[13px] text-slate-500 transition-colors hover:text-white">
                       {l}
                     </a>
                   </li>

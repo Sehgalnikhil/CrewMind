@@ -8,7 +8,7 @@ import { useRazorpay } from "react-razorpay";
 import { useState } from "react";
 
 import { listDocuments } from "#/api/documents";
-import { createSubscription, verifyPayment } from "#/api/billing";
+import { createOrder, verifyPayment } from "#/api/billing";
 import { Can } from "#/components/auth/Can";
 import { AppShell } from "#/components/layout/AppShell";
 import { BlockTitle, GlowChip, Panel } from "#/components/os/ui";
@@ -131,6 +131,18 @@ export function BillingPage() {
   const { Razorpay } = useRazorpay();
   const [isAnnual, setIsAnnual] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
+  const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
+  
+  const [addingAddon, setAddingAddon] = useState<string | null>(null);
+  const [addedAddons, setAddedAddons] = useState<string[]>([]);
+
+  const handleAddAddon = (addonName: string) => {
+    setAddingAddon(addonName);
+    setTimeout(() => {
+      setAddedAddons((prev) => [...prev, addonName]);
+      setAddingAddon(null);
+    }, 1200);
+  };
 
   // ROI Calculator State
   const [teamSize, setTeamSize] = useState(10);
@@ -145,25 +157,25 @@ export function BillingPage() {
   const { mutate: subscribe, isPending } = useMutation({
     mutationFn: async (planName: string) => {
       if (planName === "Enterprise") {
-        window.location.href = "mailto:sales@crewmind.com";
+        setIsSalesModalOpen(true);
         return;
       }
       if (planName === "Starter") return;
       
-      const { subscription_id, key_id } = await createSubscription({ plan_name: planName });
+      const { order_id, key_id } = await createOrder({ plan_name: planName });
       
       const options = {
         key: key_id,
-        subscription_id: subscription_id,
+        order_id: order_id,
         name: "CrewMind",
         description: `${planName} Plan`,
         handler: async (response: any) => {
           await verifyPayment({
             razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_subscription_id: response.razorpay_subscription_id,
+            razorpay_order_id: response.razorpay_order_id,
             razorpay_signature: response.razorpay_signature,
           });
-          alert("Subscription successful!");
+          alert("Payment successful!");
         },
         theme: {
           color: "#8A7BEF",
@@ -387,14 +399,61 @@ export function BillingPage() {
                 </div>
                 
                 <div className="mt-6">
-                  <div className="mb-3 text-[13px] font-extrabold" style={{ color: addon.color }}>
-                    {addon.price !== "Coming Soon" ? `Starting at ${addon.price}` : ""}
+                  <div className="mb-3 flex items-baseline gap-1" style={{ color: addon.color }}>
+                    {addon.price !== "Coming Soon" ? (
+                      <>
+                        <span className="text-xl font-extrabold">{addon.price.split('/')[0]}</span>
+                        <span className="text-xs font-semibold opacity-70">/{addon.price.split('/')[1]}</span>
+                      </>
+                    ) : (
+                      <span className="text-sm font-bold opacity-0">TBD</span>
+                    )}
                   </div>
                   <button 
-                    disabled={addon.status === "Coming Soon"}
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2 text-[13px] font-bold text-white transition-colors hover:bg-white/[0.08] disabled:opacity-40 disabled:hover:bg-white/[0.03]"
+                    disabled={addon.status === "Coming Soon" || addedAddons.includes(addon.name) || addingAddon === addon.name}
+                    onClick={() => handleAddAddon(addon.name)}
+                    className={cn(
+                      "w-full rounded-xl border py-2.5 text-[13px] font-bold transition-all relative overflow-hidden flex items-center justify-center h-11",
+                      addedAddons.includes(addon.name)
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+                        : addon.status === "Coming Soon"
+                        ? "border-white/5 bg-white/[0.02] text-white/40"
+                        : "border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:border-white/20"
+                    )}
                   >
-                    {addon.status === "Coming Soon" ? "Coming Soon" : "Add to Plan"}
+                    <AnimatePresence mode="wait">
+                      {addingAddon === addon.name ? (
+                        <motion.div
+                          key="adding"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="flex items-center gap-2"
+                        >
+                          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                          <span>Adding...</span>
+                        </motion.div>
+                      ) : addedAddons.includes(addon.name) ? (
+                        <motion.div
+                          key="added"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="flex items-center gap-2"
+                        >
+                          <Check className="h-4 w-4" />
+                          <span>Added to Plan</span>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="default"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          {addon.status === "Coming Soon" ? "Coming Soon" : "Add to Plan"}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </button>
                 </div>
               </motion.div>
@@ -599,7 +658,10 @@ export function BillingPage() {
             <button className="w-full sm:w-auto rounded-full bg-white px-8 py-3.5 text-sm font-bold text-black shadow-glow transition-transform hover:-translate-y-1">
               Start Free
             </button>
-            <button className="w-full sm:w-auto rounded-full border border-white/20 bg-white/[0.03] px-8 py-3.5 text-sm font-bold text-white transition-colors hover:bg-white/10">
+            <button 
+              onClick={() => setIsSalesModalOpen(true)}
+              className="w-full sm:w-auto rounded-full border border-white/20 bg-white/[0.03] px-8 py-3.5 text-sm font-bold text-white transition-colors hover:bg-white/10"
+            >
               Book Enterprise Demo
             </button>
           </div>
@@ -655,6 +717,89 @@ export function BillingPage() {
         </Panel>
       </div>
 
+      <AnimatePresence>
+        {isSalesModalOpen && (
+          <TalkToSalesModal isOpen={isSalesModalOpen} onClose={() => setIsSalesModalOpen(false)} />
+        )}
+      </AnimatePresence>
     </AppShell>
+  );
+}
+
+function TalkToSalesModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [submitted, setSubmitted] = useState(false);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#0B0D14] shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
+          <h3 className="text-lg font-bold text-white">Contact Sales</h3>
+          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-white transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <div className="p-6">
+          {submitted ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-8"
+            >
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-500">
+                <Check className="h-6 w-6" />
+              </div>
+              <h4 className="mb-2 text-lg font-bold text-white">Request Received</h4>
+              <p className="text-sm text-slate-400">Our sales team will get back to you within 24 hours to schedule a demo and discuss your enterprise needs.</p>
+              <button 
+                onClick={onClose}
+                className="mt-6 w-full rounded-xl bg-white/10 py-2.5 text-sm font-bold text-white hover:bg-white/20 transition-colors"
+              >
+                Close
+              </button>
+            </motion.div>
+          ) : (
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                setSubmitted(true);
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-slate-300">Work Email</label>
+                <input required type="email" placeholder="you@company.com" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#8A7BEF]" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-slate-300">Company Size</label>
+                <select className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#8A7BEF] appearance-none cursor-pointer">
+                  <option value="1-50">1-50 employees</option>
+                  <option value="51-200">51-200 employees</option>
+                  <option value="201-1000">201-1000 employees</option>
+                  <option value="1000+">1000+ employees</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-slate-300">How can we help?</label>
+                <textarea required rows={3} placeholder="Tell us about your requirements..." className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#8A7BEF]" />
+              </div>
+              <button 
+                type="submit"
+                className="mt-4 w-full rounded-xl bg-[#8A7BEF] py-3 text-sm font-bold text-white shadow-[0_0_30px_-5px_rgba(138,123,239,0.5)] transition-transform hover:-translate-y-0.5"
+              >
+                Submit Request
+              </button>
+            </form>
+          )}
+        </div>
+      </motion.div>
+    </div>
   );
 }

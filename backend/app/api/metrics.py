@@ -1,4 +1,5 @@
 import json
+import random
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,16 +28,20 @@ async def get_metrics(
     metric = result.scalars().first()
     
     if not metric:
+        jitter = random.uniform(0.6, 1.5)
+        randomized_revenue = [round(r * jitter, 1) for r in INITIAL_REVENUE]
+        randomized_cashflow = [round(c * jitter, 1) for c in INITIAL_CASHFLOW]
+
         metric = OrganizationMetric(
             workspace_id=workspace_id,
-            revenue_run_rate=1.24,
+            revenue_run_rate=round(1.24 * jitter, 2),
             revenue_trend="+12% vs last quarter",
             revenue_trend_up=True,
-            revenue_series_json=json.dumps(INITIAL_REVENUE),
-            net_cash_flow=31.0,
+            revenue_series_json=json.dumps(randomized_revenue),
+            net_cash_flow=round(31.0 * jitter, 1),
             cash_flow_trend="+29% vs last quarter",
             cash_flow_trend_up=True,
-            cash_flow_series_json=json.dumps(INITIAL_CASHFLOW)
+            cash_flow_series_json=json.dumps(randomized_cashflow)
         )
         db.add(metric)
         await db.commit()

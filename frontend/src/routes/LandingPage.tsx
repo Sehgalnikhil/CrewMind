@@ -54,7 +54,7 @@ function Navbar() {
         <nav className="hidden items-center gap-8 md:flex">
           {[
             ["The Agents", "#agents"],
-            ["Dashboard", "#dashboard"],
+            ["Dashboard", "/dashboard"],
             ["Capabilities", "#features"],
             ["Pricing", "#pricing"],
           ].map(([label, href]) => (

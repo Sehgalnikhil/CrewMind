@@ -26,6 +26,7 @@ from app.models.mixins import utcnow
 from app.schemas.reasoning import AgentReasoningOutput
 from app.services.agents.personality import get_profile, personality_prompt_block
 from app.services.agents.progress_bus import publish
+from app.services.agents.tool_executor import execute_tool
 from app.services.document_processing.embedding_store import query as retrieve_chunks
 from app.services.llm.gemini_client import chat, stream_chat
 from app.services.memory.memory_store import format_memory_for_prompt, read_recent_memory
@@ -154,8 +155,8 @@ class BaseAgent(ABC):
         # Load persistent state
         state = await self._get_or_create_state(db, workspace_id)
 
-        max_retries = 2
-        for attempt in range(max_retries):
+        max_iterations = 4
+        for attempt in range(max_iterations):
             system = self._build_full_system_prompt(state)
             user_message = await self._build_user_message(db, workspace_id, message, extra_context)
             
@@ -189,8 +190,26 @@ class BaseAgent(ABC):
                     "confidence": reasoning.confidence,
                 })
             
+            # Tool Execution Loop
+            if reasoning.tool_actions and attempt < max_iterations - 1:
+                logger.info("Agent %s executing %d tools", self.key, len(reasoning.tool_actions))
+                if execution_id:
+                    await publish(execution_id, {
+                        "type": "tool_execution",
+                        "agent": self.key,
+                        "tools": [t.tool_name for t in reasoning.tool_actions]
+                    })
+                
+                tool_results_text = f"\n\n## Tool Results (Iteration {attempt+1})\n"
+                for tool in reasoning.tool_actions:
+                    res_str = await execute_tool(tool.tool_name, tool.arguments, workspace_id, db)
+                    tool_results_text += f"\n### Result from {tool.tool_name}\n```json\n{res_str}\n```\n"
+                
+                extra_context += tool_results_text
+                continue
+
             # Reflection loop
-            if reasoning.critic_reflection and reasoning.confidence < 75 and attempt < max_retries - 1:
+            if reasoning.critic_reflection and reasoning.confidence < 75 and attempt < max_iterations - 1:
                 logger.info("Agent %s reflecting and retrying. Critic: %s", self.key, reasoning.critic_reflection)
                 extra_context += f"\n\n## Self-Correction (Attempt {attempt+1})\nYou previously criticized your own output: {reasoning.critic_reflection}\nPlease generate a better response addressing this."
                 continue

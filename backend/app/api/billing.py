@@ -20,19 +20,19 @@ settings = get_settings()
 rzp_client = razorpay.Client(auth=(settings.razorpay_key_id, settings.razorpay_key_secret))
 
 
-class CreateSubscriptionRequest(BaseModel):
+class CreateOrderRequest(BaseModel):
     plan_name: str
 
 
 class VerifyPaymentRequest(BaseModel):
     razorpay_payment_id: str
-    razorpay_subscription_id: str
+    razorpay_order_id: str
     razorpay_signature: str
 
 
-@router.post("/create-subscription")
-async def create_subscription(
-    req: CreateSubscriptionRequest,
+@router.post("/create-order")
+async def create_order(
+    req: CreateOrderRequest,
     ctx: RequestContext = Depends(RequiresPermission("billing.manage")),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -41,50 +41,41 @@ async def create_subscription(
     if not workspace_id:
         raise HTTPException(status_code=400, detail="Workspace required")
 
-    mock_plan_id = "plan_mock123"
+    amount_map = {
+        "Founder": 149900,
+        "Growth": 499900,
+        "Enterprise": 999900
+    }
+    amount = amount_map.get(req.plan_name, 149900)
+    if amount < 100:
+        raise HTTPException(status_code=400, detail="Amount must be at least 100 paise")
 
     try:
-        rzp_sub = rzp_client.subscription.create({
-            "plan_id": mock_plan_id,
-            "total_count": 12,
-            "customer_notify": 1,
+        rzp_order = rzp_client.order.create({
+            "amount": amount,
+            "currency": "INR",
+            "receipt": f"rcpt_{workspace_id}"[:40]
         })
 
         subscription = Subscription(
             workspace_id=workspace_id,
             plan_name=req.plan_name,
             status="created",
-            razorpay_subscription_id=rzp_sub["id"],
-            razorpay_plan_id=mock_plan_id,
+            razorpay_subscription_id=rzp_order["id"],
+            razorpay_plan_id="order_based",
         )
         db.add(subscription)
         await db.commit()
 
         await log_audit_event(
             db, workspace_id=workspace_id, user_id=ctx.user.id,
-            action="billing.subscription_created",
+            action="billing.order_created",
             resource_type="subscription", resource_id=subscription.id,
             details={"plan": req.plan_name},
         )
-        return {"subscription_id": rzp_sub["id"], "key_id": settings.razorpay_key_id}
-    except Exception:
-        # Fallback to mock data if Razorpay API fails due to mock keys
-        subscription = Subscription(
-            workspace_id=workspace_id,
-            plan_name=req.plan_name,
-            status="created",
-            razorpay_subscription_id="sub_mock_123",
-            razorpay_plan_id=mock_plan_id,
-        )
-        db.add(subscription)
-        await db.commit()
-        await log_audit_event(
-            db, workspace_id=workspace_id, user_id=ctx.user.id,
-            action="billing.subscription_created",
-            resource_type="subscription", resource_id=subscription.id,
-            details={"plan": req.plan_name, "mocked": True},
-        )
-        return {"subscription_id": "sub_mock_123", "key_id": settings.razorpay_key_id, "mocked": True}
+        return {"order_id": rzp_order["id"], "key_id": settings.razorpay_key_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Order creation failed: {str(e)}")
 
 
 @router.post("/verify")
@@ -101,16 +92,15 @@ async def verify_payment(
     try:
         expected_signature = hmac.new(
             bytes(settings.razorpay_key_secret, "latin-1"),
-            bytes(req.razorpay_payment_id + "|" + req.razorpay_subscription_id, "latin-1"),
+            bytes(req.razorpay_order_id + "|" + req.razorpay_payment_id, "latin-1"),
             hashlib.sha256,
         ).hexdigest()
 
-        # In production, enforce signature check. We pass for mock testing.
         if expected_signature != req.razorpay_signature:
-            pass
+            raise HTTPException(status_code=400, detail="Invalid signature")
 
         result = await db.execute(
-            select(Subscription).where(Subscription.razorpay_subscription_id == req.razorpay_subscription_id)
+            select(Subscription).where(Subscription.razorpay_subscription_id == req.razorpay_order_id)
         )
         subscription = result.scalar_one_or_none()
 
@@ -125,6 +115,8 @@ async def verify_payment(
             )
 
         return {"status": "success"}
+    except HTTPException:
+        raise
     except Exception as e:
         return {"status": "failed", "detail": str(e)}
 

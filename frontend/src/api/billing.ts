@@ -1,17 +1,17 @@
 import { api } from "./client";
 
-export interface CreateSubscriptionRequest {
+export interface CreateOrderRequest {
   plan_name: string;
 }
 
 export interface VerifyPaymentRequest {
   razorpay_payment_id: string;
-  razorpay_subscription_id: string;
+  razorpay_order_id: string;
   razorpay_signature: string;
 }
 
-export async function createSubscription(data: CreateSubscriptionRequest) {
-  const response = await api.post("/billing/create-subscription", data);
+export async function createOrder(data: CreateOrderRequest) {
+  const response = await api.post("/billing/create-order", data);
   return response.data;
 }
 

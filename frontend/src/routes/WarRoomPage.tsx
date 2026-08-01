@@ -306,7 +306,7 @@ export function WarRoomPage() {
   const [followInput, setFollowInput] = useState("");
   const [selectedExecutive, setSelectedExecutive] = useState<CrewAgentKey | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  
+
   useWarRoomSocket(sessionId);
 
   const queueRef = useRef<ScriptTurn[]>([]);
@@ -382,7 +382,7 @@ export function WarRoomPage() {
       queueRef.current = [...s.turns];
       setSession("running");
       setPlaying(true);
-      
+
       try {
         const response = await api.post("/warroom", {
           question,
@@ -403,7 +403,7 @@ export function WarRoomPage() {
       } catch (err) {
         console.error("Failed to save session:", err);
       }
-      
+
       schedule(playNext, 400);
     },
     [playNext, schedule],

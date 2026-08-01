@@ -31,6 +31,15 @@ class Settings(BaseSettings):
     razorpay_key_id: str = "rzp_test_mock123"
     razorpay_key_secret: str = "mock_secret"
 
+    github_client_id: str | None = None
+    github_client_secret: str | None = None
+    
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    
+    slack_client_id: str | None = None
+    slack_client_secret: str | None = None
+
     cors_origins: list[str] = ["http://localhost:5173"]
 
     @property
