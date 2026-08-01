@@ -150,7 +150,7 @@ export function OrganizationPage() {
               aria-label="Role"
               className="rounded-lg border border-white/10 bg-[#0B0D14] px-2 py-1.5 text-xs font-bold text-slate-300 outline-none"
             >
-              {(roles ?? []).filter((r) => r.name !== "OWNER").map((r) => (
+              {(Array.isArray(roles) ? roles : []).filter((r) => r.name !== "OWNER").map((r) => (
                 <option key={r.id} value={r.id}>{r.name.charAt(0) + r.name.slice(1).toLowerCase()}</option>
               ))}
             </select>

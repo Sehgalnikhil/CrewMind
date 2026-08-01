@@ -11,7 +11,7 @@ export function DocumentList() {
     queryKey: ["documents"],
     queryFn: listDocuments,
     refetchInterval: (query) => {
-      const docs = query.state.data ?? [];
+      const docs = Array.isArray(query.state.data) ? query.state.data : [];
       const hasPending = docs.some((d) => d.status === "uploaded" || d.status === "parsing");
       return hasPending ? 1500 : false;
     },

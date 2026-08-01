@@ -86,7 +86,7 @@ export function BrainPage() {
     return () => clearInterval(t);
   }, []);
 
-  const chunks = useMemo(() => (documents ?? []).reduce((s, d) => s + d.chunk_count, 0), [documents]);
+  const chunks = useMemo(() => (Array.isArray(documents) ? documents : []).reduce((s, d) => s + d.chunk_count, 0), [documents]);
   const docCount = documents?.length ?? 0;
   const thoughts = useMemo(
     () => Array.from({ length: 5 }, (_, i) => COGNITION_SCRIPT[(thoughtIdx + i) % COGNITION_SCRIPT.length]),
@@ -96,7 +96,7 @@ export function BrainPage() {
 
   /* memory growth: cumulative documents by index (stable, real ordering) */
   const growth = useMemo(() => {
-    const sorted = [...(documents ?? [])].sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
+    const sorted = [...(Array.isArray(documents) ? documents : [])].sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
     let acc = 0;
     const pts = sorted.map((d) => (acc += d.chunk_count));
     return pts.length >= 2 ? pts : [0, chunks || 1];

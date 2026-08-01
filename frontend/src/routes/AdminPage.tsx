@@ -80,7 +80,7 @@ export function AdminPage() {
   });
 
   const audit = useMemo(
-    () => (auditLogs ?? []).filter((a) => auditFilter === "all" || auditKind(a.action) === auditFilter),
+    () => (Array.isArray(auditLogs) ? auditLogs : []).filter((a) => auditFilter === "all" || auditKind(a.action) === auditFilter),
     [auditLogs, auditFilter],
   );
 
@@ -111,7 +111,7 @@ export function AdminPage() {
             <OrbitalLoader label="loading members" />
           ) : (
             <div className="flex flex-col">
-              {(members ?? []).map((m, i) => (
+              {(Array.isArray(members) ? members : []).map((m, i) => (
                 <motion.div
                   key={m.member_id}
                   initial={{ opacity: 0, y: 10 }}
@@ -139,7 +139,7 @@ export function AdminPage() {
                       aria-label={`Role for ${m.full_name}`}
                       className="rounded-lg border border-white/10 bg-[#0B0D14] px-2 py-1.5 text-xs font-bold text-slate-300 outline-none disabled:opacity-50"
                     >
-                      {(roles ?? []).map((r) => (
+                      {(Array.isArray(roles) ? roles : []).map((r) => (
                         <option key={r.id} value={r.id}>{r.name}</option>
                       ))}
                     </select>
@@ -166,7 +166,7 @@ export function AdminPage() {
                   </Can>
                 </motion.div>
               ))}
-              {(members ?? []).length === 0 && (
+              {(Array.isArray(members) ? members : []).length === 0 && (
                 <p className="py-6 text-center text-sm text-slate-500">No members yet — invite people from the Organization page.</p>
               )}
             </div>

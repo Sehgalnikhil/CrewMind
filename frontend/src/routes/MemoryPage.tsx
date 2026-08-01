@@ -96,7 +96,7 @@ export function MemoryPage() {
 
   const all = useMemo<MemoryRecord[]>(
     () =>
-      [...SIM_MEMORIES, ...memoriesFromDocuments(documents ?? []), ...memoriesFromReports(reports ?? [])].sort(
+      [...SIM_MEMORIES, ...memoriesFromDocuments(Array.isArray(documents) ? documents : []), ...memoriesFromReports(Array.isArray(reports) ? reports : [])].sort(
         (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
       ),
     [documents, reports],

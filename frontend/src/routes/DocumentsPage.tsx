@@ -17,13 +17,13 @@ export function DocumentsPage() {
     queryKey: ["documents"],
     queryFn: listDocuments,
     refetchInterval: (q) => {
-      const docs = q.state.data ?? [];
+      const docs = Array.isArray(q.state.data) ? q.state.data : [];
       const hasPending = docs.some((d) => d.status === "uploaded" || d.status === "parsing");
       return hasPending ? 1500 : false;
     },
   });
 
-  const documents = data ?? [];
+  const documents = Array.isArray(data) ? data : [];
   const indexed = documents.filter((d) => d.status === "indexed");
   const processing = documents.filter((d) => d.status === "uploaded" || d.status === "parsing");
   const chunks = documents.reduce((sum, d) => sum + d.chunk_count, 0);

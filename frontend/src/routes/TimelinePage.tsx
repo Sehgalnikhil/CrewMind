@@ -29,7 +29,7 @@ export function TimelinePage() {
   const listRef = useRef<HTMLDivElement>(null);
 
   const events = useMemo<TimelineEvent[]>(() => {
-    const fromReports: TimelineEvent[] = (reports ?? []).map((r) => ({
+    const fromReports: TimelineEvent[] = (Array.isArray(reports) ? reports : []).map((r) => ({
       id: `rep-${r.id}`,
       kind: "report",
       title: r.title || "Executive report",
@@ -38,7 +38,7 @@ export function TimelinePage() {
       agents: ["coordinator"],
       link: "/reports",
     }));
-    const fromDocs: TimelineEvent[] = (documents ?? []).map((d) => ({
+    const fromDocs: TimelineEvent[] = (Array.isArray(documents) ? documents : []).map((d) => ({
       id: `doc-${d.id}`,
       kind: "document",
       title: d.filename,

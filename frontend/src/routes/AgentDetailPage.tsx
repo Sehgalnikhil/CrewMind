@@ -123,12 +123,12 @@ export function AgentDetailPage() {
   if (!agent) return <Navigate to="/agents" replace />;
 
   const latestReport = reports?.[0];
-  const findings = agentFindings(agent, latestReport) ?? [];
-  const indexed = (documents ?? []).filter((d) => d.status === "indexed");
+  const findings = Array.isArray(agentFindings(agent, latestReport)) ? agentFindings(agent, latestReport) : [];
+  const indexed = (Array.isArray(documents) ? documents : []).filter((d) => d.status === "indexed");
   const colleagues = AGENTS.filter((a) => a.key !== agent.key);
   const confidence = state?.confidence ?? CONFIDENCE[agent.key];
   
-  const activeGoals = state?.goals ?? [];
+  const activeGoals = Array.isArray(state?.goals) ? state.goals : [];
 
   return (
     <AppShell title={`${agent.persona} · ${agent.name} Agent`}>

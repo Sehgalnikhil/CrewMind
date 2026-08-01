@@ -10,7 +10,7 @@ import { usePermissionStore } from "#/stores/permissionStore";
 export function useAllowedNav(): NavEntry[] {
   const permissions = usePermissionStore((s) => s.context?.permissions);
   return useMemo(
-    () => NAV_ENTRIES.filter((e) => !e.permission || (permissions ?? []).includes(e.permission)),
+    () => NAV_ENTRIES.filter((e) => !e.permission || (Array.isArray(permissions) ? permissions : []).includes(e.permission)),
     [permissions]
   );
 }
@@ -19,5 +19,5 @@ export function useAllowedNav(): NavEntry[] {
 export function navEntryAllowed(entry: NavEntry): boolean {
   if (!entry.permission) return true;
   const perms = usePermissionStore.getState().context?.permissions;
-  return (perms ?? []).includes(entry.permission);
+  return (Array.isArray(perms) ? perms : []).includes(entry.permission);
 }
