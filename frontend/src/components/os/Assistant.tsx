@@ -7,22 +7,14 @@ import { ThinkingDots } from "#/components/os/ui";
 import { COORDINATOR_META } from "#/types";
 import { useUiStore } from "#/stores/uiStore";
 
-interface AssistantTurn {
+import { askNexus } from "#/api/nexus";
+
+export interface AssistantTurn {
   role: "user" | "nexus";
   text: string;
   to?: string;
   toLabel?: string;
 }
-
-const INTENTS: { match: RegExp; reply: string; to?: string; toLabel?: string }[] = [
-  { match: /\b(hi|hello|hey|greetings|howdy)\b/i, reply: "Hello, Executive. I'm Nexus, your OS concierge. Ask me for a specific tool, or take complex requests to the Boardroom." },
-  { match: /war\s*room|debate|deliberat/i, reply: "Convening the boardroom. The five executives will take your question to the strategy table.", to: "/war-room", toLabel: "Open War Room" },
-  { match: /risk|runway|cash|burn/i, reply: "Ledger tracks runway and burn on Mission Control — the Risk Radar widget has the live picture.", to: "/dashboard", toLabel: "Open Mission Control" },
-  { match: /simulat|what if|scenario/i, reply: "The Scenario Simulator can stress-test that decision before you commit to it.", to: "/simulator", toLabel: "Open Simulator" },
-  { match: /report|verdict/i, reply: "The latest signed verdicts live in Reports.", to: "/reports", toLabel: "Open Reports" },
-  { match: /upload|document|file/i, reply: "Drop files into Documents and the crew will index them into organizational memory.", to: "/documents", toLabel: "Open Documents" },
-  { match: /remember|memory|search|find/i, reply: "Executive Memory can search every document, chat, report and decision at once.", to: "/memory", toLabel: "Search Memory" },
-];
 
 export function Assistant() {
   const open = useUiStore((s) => s.assistantOpen);
@@ -42,27 +34,43 @@ export function Assistant() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [turns, thinking]);
 
-  function ask() {
+  async function ask() {
     const q = input.trim();
     if (!q || thinking) return;
     setInput("");
-    setTurns((t) => [...t, { role: "user", text: q }]);
+    
+    // Optimistically add user turn
+    const newTurns = [...turns, { role: "user" as const, text: q }];
+    setTurns(newTurns);
     setThinking(true);
-    const intent = INTENTS.find((i) => i.match.test(q));
-    setTimeout(() => {
-      setThinking(false);
-      setTurns((t) => [
-        ...t,
-        intent
-          ? { role: "nexus", text: intent.reply, to: intent.to, toLabel: intent.toLabel }
-          : {
-              role: "nexus",
-              text: "That deserves the full crew. Take it to the Boardroom and I'll bring the right executives in.",
-              to: "/chat",
-              toLabel: "Open Boardroom Chat",
-            },
+    
+    try {
+      const response = await askNexus({
+        query: q,
+        history: turns.map(t => ({ role: t.role, text: t.text }))
+      });
+      
+      setTurns([
+        ...newTurns,
+        {
+          role: "nexus",
+          text: response.reply,
+          to: response.to || undefined,
+          toLabel: response.toLabel || undefined,
+        },
       ]);
-    }, 900);
+    } catch (err) {
+      console.error("Nexus failed:", err);
+      setTurns([
+        ...newTurns,
+        {
+          role: "nexus",
+          text: "I'm having trouble connecting to the backend. Please try again.",
+        },
+      ]);
+    } finally {
+      setThinking(false);
+    }
   }
 
   return (
