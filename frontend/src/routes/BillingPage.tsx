@@ -148,7 +148,7 @@ const INVOICES = [
 export function BillingPage() {
   const { data: usageData } = useQuery({ queryKey: ["usage"], queryFn: getUsage });
   
-  const { error: rzpError, isLoading: isRzpLoading, Razorpay } = useRazorpay();
+  const { Razorpay } = useRazorpay();
   const [isAnnual, setIsAnnual] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
   const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
@@ -156,7 +156,7 @@ export function BillingPage() {
   const [addingAddon, setAddingAddon] = useState<string | null>(null);
   const [addedAddons, setAddedAddons] = useState<string[]>([]);
 
-  const { mutate: subscribeAddon, isPending: isAddonPending } = useMutation({
+  const { mutate: subscribeAddon } = useMutation({
     mutationFn: async (addonId: string) => {
       if (!Razorpay) {
         alert("Payment system is still loading or failed to load. Please disable adblockers and try again.");
