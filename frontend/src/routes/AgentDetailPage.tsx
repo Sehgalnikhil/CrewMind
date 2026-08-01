@@ -260,7 +260,7 @@ export function AgentDetailPage() {
             />
             {findings.length > 0 ? (
               <ul className="space-y-2.5">
-                {findings.slice(0, 5).map((f, i) => (
+                {(Array.isArray(findings) ? findings : []).slice(0, 5).map((f, i) => (
                   <motion.li
                     key={i}
                     initial={{ opacity: 0, x: -14 }}
@@ -302,7 +302,7 @@ export function AgentDetailPage() {
             <BlockTitle label="history" title="Recent runs" />
             {reports && reports.length > 0 ? (
               <ol className="relative ml-2 space-y-4 border-l border-white/[0.08] pl-5">
-                {reports.slice(0, 5).map((r, i) => (
+                {(Array.isArray(reports) ? reports : []).slice(0, 5).map((r, i) => (
                   <motion.li
                     key={r.id}
                     initial={{ opacity: 0, x: -12 }}
@@ -334,7 +334,7 @@ export function AgentDetailPage() {
             <BlockTitle label="reading list" title="Documents analyzed" />
             {indexed.length > 0 ? (
               <div className="flex flex-col gap-1.5">
-                {indexed.slice(0, 5).map((d) => (
+                {(Array.isArray(indexed) ? indexed : []).slice(0, 5).map((d) => (
                   <Link key={d.id} to="/documents" className="flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-white/[0.04]">
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: `${agent.color}18`, color: agent.color }}>
                       <FileText className="h-3.5 w-3.5" />

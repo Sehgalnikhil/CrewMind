@@ -174,7 +174,7 @@ export function ProfilePage() {
                     <span className="text-[12.5px] font-semibold text-slate-200">{b.label}</span>
                   </Link>
                 ))}
-                {recents.slice(0, 5).map((r) => (
+                {(Array.isArray(recents) ? recents : []).slice(0, 5).map((r) => (
                   <Link key={r.to} to={r.to} className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors hover:bg-white/[0.04]">
                     <History className="h-3.5 w-3.5 text-slate-500" />
                     <span className="text-[12.5px] font-semibold text-slate-300">{r.label}</span>

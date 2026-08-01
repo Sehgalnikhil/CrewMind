@@ -15,9 +15,14 @@ export function useWidgetLayout(allIds: string[], defaultHidden: string[], defau
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const l = JSON.parse(raw) as WidgetLayout;
-        // keep newly-registered widgets appended
-        const known = new Set(l.order);
-        return { ...l, order: [...l.order.filter((id) => allIds.includes(id)), ...allIds.filter((id) => !known.has(id))] };
+        const lOrder = Array.isArray(l.order) ? l.order : [];
+        const known = new Set(lOrder);
+        return { 
+          order: [...lOrder.filter((id) => allIds.includes(id)), ...allIds.filter((id) => !known.has(id))],
+          hidden: Array.isArray(l.hidden) ? l.hidden : defaultHidden,
+          pinned: Array.isArray(l.pinned) ? l.pinned : [],
+          wide: Array.isArray(l.wide) ? l.wide : defaultWide,
+        };
       }
     } catch {
       /* fall through to defaults */

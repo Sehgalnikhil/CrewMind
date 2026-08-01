@@ -62,7 +62,7 @@ function agentByKey(key: string) {
 }
 
 function sparkPath(w: number, h: number, series: number[]) {
-  if (!series || series.length === 0) return `M0,${h} L${w},${h}`;
+  if (!series || !Array.isArray(series) || series.length === 0) return `M0,${h} L${w},${h}`;
   if (series.length === 1) return `M0,${h / 2} L${w},${h / 2}`;
   
   const max = Math.max(...series);
@@ -146,15 +146,15 @@ export function DashboardPage() {
   const latestReport = reports?.[0];
   const health = latestReport?.business_health_score ?? null;
 
-  const revSeries = metrics?.revenue_series ?? [0, 0];
-  const cashSeries = metrics?.cash_flow_series ?? [0, 0];
+  const revSeries = Array.isArray(metrics?.revenue_series) ? metrics.revenue_series : [0, 0];
+  const cashSeries = Array.isArray(metrics?.cash_flow_series) ? metrics.cash_flow_series : [0, 0];
   const currentMrr = `₹${revSeries[revSeries.length - 1] ?? 0}K`;
 
   const kpis = [
     { label: "Revenue run-rate", value: metrics?.revenue_run_rate ?? 0, decimals: 2, prefix: "₹", suffix: "L", trend: metrics?.revenue_trend ?? "", trendUp: metrics?.revenue_trend_up ?? true, series: revSeries, color: "#8A7BEF" },
     { label: "Net cash flow", value: metrics?.net_cash_flow ?? 0, prefix: "₹", suffix: "K/mo", trend: metrics?.cash_flow_trend ?? "", trendUp: metrics?.cash_flow_trend_up ?? true, series: cashSeries, color: "#0891CF" },
-    { label: "Open risks", value: latestReport?.risks?.length ?? 0, trend: latestReport ? "flagged in latest report" : "run an analysis to populate", trendUp: false, color: "#EC4899" },
-    { label: "Opportunities", value: latestReport?.opportunities?.length ?? 0, trend: latestReport ? "identified by the crew" : "run an analysis to populate", trendUp: true, color: "#059669" },
+    { label: "Open risks", value: Array.isArray(latestReport?.risks) ? latestReport.risks.length : 0, trend: latestReport ? "flagged in latest report" : "run an analysis to populate", trendUp: false, color: "#EC4899" },
+    { label: "Opportunities", value: Array.isArray(latestReport?.opportunities) ? latestReport.opportunities.length : 0, trend: latestReport ? "identified by the crew" : "run an analysis to populate", trendUp: true, color: "#059669" },
   ] as const;
 
   /* ---------------- widget registry ---------------- */
@@ -269,9 +269,9 @@ export function DashboardPage() {
         label: "knowledge base",
         title: "Recent Documents",
         render: () =>
-          documents && documents.length > 0 ? (
+          Array.isArray(documents) && documents.length > 0 ? (
             <div className="flex flex-col gap-1.5">
-              {documents.slice(0, 4).map((d) => (
+              {(Array.isArray(documents) ? documents : []).slice(0, 4).map((d) => (
                 <Link key={d.id} to="/documents" className="flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-white/[0.04]">
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0891CF]/15 text-[#67c7f5]"><FileText className="h-3.5 w-3.5" /></span>
                   <div className="min-w-0 flex-1">
@@ -295,9 +295,9 @@ export function DashboardPage() {
         label: "verdict history",
         title: "Recent Reports",
         render: () =>
-          reports && reports.length > 0 ? (
+          Array.isArray(reports) && reports.length > 0 ? (
             <div className="flex flex-col gap-1.5">
-              {reports.slice(0, 4).map((r) => (
+              {(Array.isArray(reports) ? reports : []).slice(0, 4).map((r) => (
                 <Link key={r.id} to="/reports" className="flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-white/[0.04]">
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-crew-500/15 text-crew-300"><Sparkles className="h-3.5 w-3.5" /></span>
                   <div className="min-w-0 flex-1">

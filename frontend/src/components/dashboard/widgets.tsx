@@ -22,7 +22,7 @@ export function RiskRadarWidget() {
   const metrics = useInsightsStore((s) => s.metrics);
   const failed_penalty = Math.min(1, (metrics?.failed_tasks || 0) * 0.1); // up to +0.1 per task
   
-  const current_axes = RISK_AXES.map(a => ({
+  const current_axes = (Array.isArray(RISK_AXES) ? RISK_AXES : []).map(a => ({
     ...a,
     v: Math.min(1, a.v + (a.label === 'Ops' ? failed_penalty : 0))
   }));

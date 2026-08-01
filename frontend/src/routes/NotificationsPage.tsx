@@ -304,7 +304,7 @@ export function NotificationsPage() {
   const [agentFilter, setAgentFilter] = useState<AgentKey | null>(null);
 
   const items = useMemo<FeedItem[]>(() => {
-    const fromReports: FeedItem[] = (reports ?? []).slice(0, 6).map((r) => ({
+    const fromReports: FeedItem[] = ((Array.isArray(reports) ? reports : [])).slice(0, 6).map((r) => ({
       id: `r-${r.id}`,
       kind: "insight",
       icon: "report",
@@ -314,7 +314,7 @@ export function NotificationsPage() {
       at: r.created_at,
       to: "/reports",
     }));
-    const fromDocuments: FeedItem[] = (documents ?? []).slice(0, 8).map((d) => ({
+    const fromDocuments: FeedItem[] = ((Array.isArray(documents) ? documents : [])).slice(0, 8).map((d) => ({
       id: `d-${d.id}`,
       kind: "system",
       icon: "document",

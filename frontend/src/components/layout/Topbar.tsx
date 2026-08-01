@@ -35,7 +35,7 @@ function NotificationsMenu() {
   }, []);
 
   const items = [
-    ...(reports ?? []).slice(0, 3).map((r) => ({
+    ...((Array.isArray(reports) ? reports : [])).slice(0, 3).map((r) => ({
       id: `r-${r.id}`,
       icon: <Sparkles className="h-3.5 w-3.5" />,
       color: "#8A7BEF",
@@ -44,7 +44,7 @@ function NotificationsMenu() {
       at: r.created_at,
       to: "/reports",
     })),
-    ...(documents ?? []).slice(0, 3).map((d) => ({
+    ...((Array.isArray(documents) ? documents : [])).slice(0, 3).map((d) => ({
       id: `d-${d.id}`,
       icon: <FileText className="h-3.5 w-3.5" />,
       color: "#0891CF",

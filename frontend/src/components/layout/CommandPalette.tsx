@@ -65,7 +65,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       icon: <Star className="h-4 w-4" />,
       group: "Bookmarks",
     }));
-    const recent: Item[] = recents.slice(0, 5).map((r) => ({
+    const recent: Item[] = (Array.isArray(recents) ? recents : []).slice(0, 5).map((r) => ({
       id: `recent-${r.to}`,
       label: r.label,
       hint: "Recently visited",
@@ -86,7 +86,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       ),
       group: "Executives",
     }));
-    const docs: Item[] = (documents ?? []).slice(0, 6).map((d) => ({
+    const docs: Item[] = ((Array.isArray(documents) ? documents : [])).slice(0, 6).map((d) => ({
       id: `doc-${d.id}`,
       label: d.filename,
       hint: `${d.file_type.toUpperCase()} · ${d.status}`,

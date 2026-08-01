@@ -220,7 +220,7 @@ export function MemoryPage() {
         </Panel>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {results.slice(0, 24).map((m, i) => (
+          {(Array.isArray(results) ? results : []).slice(0, 24).map((m, i) => (
             <MemoryCard key={m.id} m={m} query={query.trim()} onOpen={() => setOpenId(m.id)} delay={Math.min(i * 0.05, 0.4)} />
           ))}
         </div>
