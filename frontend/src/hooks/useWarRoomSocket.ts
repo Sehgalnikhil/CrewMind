@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuthStore } from "#/stores/authStore";
 
 export function useWarRoomSocket(sessionId: string | null) {
   const token = useAuthStore((s) => s.token);
-  const [socket, setSocket] = useState<WebSocket | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
+  const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     if (!token || !sessionId) {
-      setSocket(null);
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
       return;
     }
 
@@ -21,6 +24,7 @@ export function useWarRoomSocket(sessionId: string | null) {
       : "crewmind-bjlj.onrender.com";
       
     const ws = new WebSocket(`${protocol}://${host}/ws/warroom/${sessionId}?token=${token}`);
+    socketRef.current = ws;
 
     ws.onmessage = (event) => {
       try {
@@ -31,19 +35,28 @@ export function useWarRoomSocket(sessionId: string | null) {
       }
     };
 
-    setSocket(ws);
-
     return () => {
       ws.close();
-      setSocket(null);
+      if (socketRef.current === ws) {
+        socketRef.current = null;
+      }
     };
   }, [token, sessionId]);
 
-  const sendMessage = (payload: any) => {
-    if (socket && socket.readyState === WebSocket.OPEN) {
+  const sendMessage = useCallback((payload: any) => {
+    const socket = socketRef.current;
+    if (!socket) return;
+    if (socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(payload));
+    } else if (socket.readyState === WebSocket.CONNECTING) {
+      // Queue the message to be sent when the connection opens
+      const listener = () => {
+        socket.send(JSON.stringify(payload));
+        socket.removeEventListener('open', listener);
+      };
+      socket.addEventListener('open', listener);
     }
-  };
+  }, []);
 
-  return { messages, sendMessage };
+  return { messages, sendMessage, isConnected: socketRef.current?.readyState === WebSocket.OPEN };
 }
