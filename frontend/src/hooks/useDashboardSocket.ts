@@ -11,7 +11,14 @@ export function useDashboardSocket() {
     if (!token) return;
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${protocol}://${window.location.host}/ws/dashboard?token=${token}`);
+    
+    // Netlify cannot proxy WebSockets via _redirects. 
+    // We must connect directly to the Render backend in production.
+    const host = window.location.hostname === "localhost" 
+      ? window.location.host 
+      : "crewmind-bjlj.onrender.com";
+      
+    const ws = new WebSocket(`${protocol}://${host}/ws/dashboard?token=${token}`);
 
     ws.onmessage = (event) => {
       try {

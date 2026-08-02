@@ -13,10 +13,14 @@ export function useWarRoomSocket(sessionId: string | null) {
     }
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    // For local dev, api base URL might be on port 8000, but in Vite we proxy.
-    // In our api/client.ts we don't know the exact domain, but if we use window.location.host it works in prod
-    // However, for dev it might be localhost:5173. Let's just use the standard way:
-    const ws = new WebSocket(`${protocol}://${window.location.host}/ws/warroom/${sessionId}?token=${token}`);
+    
+    // Netlify cannot proxy WebSockets via _redirects. 
+    // We must connect directly to the Render backend in production.
+    const host = window.location.hostname === "localhost" 
+      ? window.location.host 
+      : "crewmind-bjlj.onrender.com";
+      
+    const ws = new WebSocket(`${protocol}://${host}/ws/warroom/${sessionId}?token=${token}`);
 
     ws.onmessage = (event) => {
       try {
