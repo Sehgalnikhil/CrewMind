@@ -304,13 +304,14 @@ async def war_room_websocket(websocket: WebSocket, session_id: str, token: str |
         return
     _user, workspace_id = auth
 
-    async with AsyncSessionLocal() as db:
-        session = await db.get(WarRoomSession, session_id)
-        if session is None or session.workspace_id != workspace_id:
-            await websocket.accept()
-            await websocket.send_json({"type": "error", "message": "Session not found."})
-            await websocket.close()
-            return
+    if not session_id.startswith("live_debate_"):
+        async with AsyncSessionLocal() as db:
+            session = await db.get(WarRoomSession, session_id)
+            if session is None or session.workspace_id != workspace_id:
+                await websocket.accept()
+                await websocket.send_json({"type": "error", "message": "Session not found."})
+                await websocket.close()
+                return
 
     room_id = f"warroom_{session_id}"
     await ws_manager.connect(room_id, websocket)
