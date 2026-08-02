@@ -128,33 +128,6 @@ async def accept_invitation(
     return {"status": "success", "workspace_id": invitation.workspace_id}
 
 
-@router.delete("/{invitation_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def revoke_invitation(
-    invitation_id: str,
-    ctx: RequestContext = Depends(RequiresPermission("users.invite")),
-    db: AsyncSession = Depends(get_db)
-) -> None:
-    if not ctx.workspace:
-        raise HTTPException(status_code=400, detail="Workspace context required")
-        
-    invitation = await db.get(WorkspaceInvitation, invitation_id)
-    if not invitation or invitation.workspace_id != ctx.workspace.id:
-        raise HTTPException(status_code=404, detail="Invitation not found")
-        
-    await db.delete(invitation)
-    await db.commit()
-    
-    from app.core.audit import log_audit_event
-    await log_audit_event(
-        db,
-        workspace_id=ctx.workspace.id,
-        user_id=ctx.user.id,
-        action="invitation.revoked",
-        resource_type="workspace",
-        resource_id=ctx.workspace.id,
-        details={"email": invitation.email}
-    )
-
 class LinkInviteResponse(BaseModel):
     token: str
 
@@ -269,3 +242,31 @@ async def accept_link_invite(
     
     return {"status": "success", "workspace_id": target_workspace.id}
 
+
+
+@router.delete("/{invitation_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_invitation(
+    invitation_id: str,
+    ctx: RequestContext = Depends(RequiresPermission("users.invite")),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    if not ctx.workspace:
+        raise HTTPException(status_code=400, detail="Workspace context required")
+        
+    invitation = await db.get(WorkspaceInvitation, invitation_id)
+    if not invitation or invitation.workspace_id != ctx.workspace.id:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+        
+    await db.delete(invitation)
+    await db.commit()
+    
+    from app.core.audit import log_audit_event
+    await log_audit_event(
+        db,
+        workspace_id=ctx.workspace.id,
+        user_id=ctx.user.id,
+        action="invitation.revoked",
+        resource_type="workspace",
+        resource_id=ctx.workspace.id,
+        details={"email": invitation.email}
+    )
