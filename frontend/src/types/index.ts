@@ -133,7 +133,8 @@ export type WsMessage =
   | { type: "completed"; report_id: string }
   | { type: "failed"; message: string }
   | { type: "agent_message"; id: string; sender: AgentKey; receiver: AgentKey; intent: string; content: string; confidence: number; priority: number; evidence: string[]; thread_id: string; timestamp: string }
-  | { type: "dashboard_metrics"; metrics: any };
+  | { type: "dashboard_metrics"; metrics: any }
+  | { type: "document_status"; document_id: string; status: string; message: string };
 
 export interface AgentRun {
   id: string;

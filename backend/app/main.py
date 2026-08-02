@@ -44,6 +44,9 @@ app.include_router(members.router)
 app.include_router(war_room.router, prefix="/api/warroom", tags=["War Room"])
 app.include_router(integrations.router)
 app.include_router(nexus.router)
+from app.api import competitors, slack
+app.include_router(competitors.router)
+app.include_router(slack.router)
 
 
 import asyncio

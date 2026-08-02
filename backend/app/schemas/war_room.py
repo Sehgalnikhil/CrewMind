@@ -51,3 +51,18 @@ class WarRoomTurnResponse(BaseModel):
 
 class WarRoomSessionDetailResponse(WarRoomSessionResponse):
     turns: list[WarRoomTurnResponse]
+
+class SimulatorLevers(BaseModel):
+    priceChange: int
+    headcount: int
+    marketing: int
+    churn: float
+    euEntry: bool
+
+class VoiceCommandRequest(BaseModel):
+    transcript: str
+    current_levers: SimulatorLevers
+
+class VoiceCommandResponse(BaseModel):
+    new_levers: SimulatorLevers
+    understood_command: str

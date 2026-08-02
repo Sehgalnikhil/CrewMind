@@ -19,6 +19,8 @@ export function useDashboardSocket() {
         
         if (message.type === "dashboard_metrics") {
           setMetrics(message.metrics);
+        } else if (message.type === "document_status") {
+          window.dispatchEvent(new CustomEvent("document_status", { detail: message }));
         }
       } catch (err) {
         console.error("Failed to parse websocket message", err);

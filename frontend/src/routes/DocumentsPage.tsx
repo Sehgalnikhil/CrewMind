@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { FolderOpen, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 import { listDocuments } from "#/api/documents";
 import { AppShell } from "#/components/layout/AppShell";
@@ -34,6 +34,21 @@ export function DocumentsPage() {
     return documents.filter((d) => `${d.filename} ${d.file_type} ${d.status}`.toLowerCase().includes(q));
   }, [documents, query]);
 
+  const [liveStatus, setLiveStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleDocStatus = (e: any) => {
+      const msg = e.detail;
+      if (msg.status === "indexed" || msg.status === "failed") {
+        setLiveStatus(null);
+      } else {
+        setLiveStatus(msg.message);
+      }
+    };
+    window.addEventListener("document_status", handleDocStatus);
+    return () => window.removeEventListener("document_status", handleDocStatus);
+  }, []);
+
   const stats = [
     { label: "Documents", value: documents.length, color: "#8A7BEF" },
     { label: "Indexed & readable", value: indexed.length, color: "#059669" },
@@ -54,6 +69,24 @@ export function DocumentsPage() {
             Drop in financials, contracts, decks and exports — all five executives read every page.
           </p>
         </motion.div>
+
+        {/* Live Scanner Banner */}
+        {liveStatus && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden rounded-xl bg-crew-500/10 border border-crew-500/20 p-4 shadow-glow"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-crew-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-crew-500"></span>
+              </div>
+              <p className="font-mono text-sm text-crew-100">{liveStatus}</p>
+            </div>
+          </motion.div>
+        )}
 
         {/* stats */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

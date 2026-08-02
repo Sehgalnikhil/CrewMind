@@ -8,14 +8,10 @@ import {
   PHASES,
   STANCE_COLOR,
   SUGGESTED_QUESTIONS,
-  buildAckTurn,
-  buildFollowUpTurns,
-  resolveScript,
 } from "#/components/warroom/scripts";
-import type { DeliberationScript, PhaseKey, ScriptTurn, Verdict } from "#/components/warroom/scripts";
+import type { PhaseKey, ScriptTurn } from "#/components/warroom/scripts";
 import { AGENTS, COORDINATOR_META, type CrewAgentKey } from "#/types";
 import { cn } from "#/lib/utils";
-import { api } from "#/api/client";
 import { ExecutivePanel } from "#/components/warroom/ExecutivePanel";
 import { useWarRoomSocket } from "#/hooks/useWarRoomSocket";
 
@@ -297,9 +293,7 @@ function TurnBubble({ turn }: { turn: PlayedTurn }) {
 
 export function WarRoomPage() {
   const [session, setSession] = useState<SessionState>("idle");
-  const [script, setScript] = useState<DeliberationScript | null>(null);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
-  const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState<1 | 2>(1);
   const [input, setInput] = useState("");
@@ -307,106 +301,72 @@ export function WarRoomPage() {
   const [selectedExecutive, setSelectedExecutive] = useState<CrewAgentKey | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  useWarRoomSocket(sessionId);
-
-  const queueRef = useRef<ScriptTurn[]>([]);
-  const verdictRef = useRef<Verdict | null>(null);
-  const timerRef = useRef<number | null>(null);
+  const { messages, sendMessage } = useWarRoomSocket(sessionId);
+  
   const idRef = useRef(0);
-  const ackRef = useRef(0);
-  const playingRef = useRef(true);
-  const speedRef = useRef(1);
   const scrollRef = useRef<HTMLDivElement>(null);
-  playingRef.current = playing;
-  speedRef.current = speed;
-
-  const clearTimer = () => {
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    timerRef.current = null;
-  };
-  useEffect(() => clearTimer, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [transcript, verdict]);
+  }, [transcript]);
 
-  const schedule = useCallback((fn: () => void, ms: number) => {
-    clearTimer();
-    const tick = () => {
-      if (!playingRef.current) {
-        timerRef.current = window.setTimeout(tick, 150);
-        return;
-      }
-      fn();
-    };
-    timerRef.current = window.setTimeout(tick, ms / speedRef.current);
-  }, []);
-
-  /** Play the next queued turn: reasoning beat → typewriter stream → settle. */
-  const playNext = useCallback(() => {
-    const next = queueRef.current.shift();
-    if (!next) {
-      setVerdict(verdictRef.current);
-      setSession("verdict");
-      return;
-    }
-    const id = ++idRef.current;
-    setTranscript((t) => [...t, { ...next, id, shown: "", done: false }]);
-
-    schedule(() => {
-      let pos = 0;
-      const step = () => {
-        if (!playingRef.current) {
-          timerRef.current = window.setTimeout(step, 150);
-          return;
+  // Handle incoming websocket messages for live debate
+  useEffect(() => {
+    if (!messages.length) return;
+    const msg = messages[messages.length - 1];
+    
+    if (msg.type === "debate_chunk") {
+      setTranscript((t) => {
+        const last = t[t.length - 1];
+        if (last && !isUserTurn(last) && last.speaker === msg.agent_key && !last.done) {
+          const shown = last.shown + msg.chunk;
+          return t.map((x, i) => i === t.length - 1 ? { ...x, shown, text: shown } : x);
+        } else {
+          return [...t, {
+            id: ++idRef.current,
+            speaker: msg.agent_key,
+            shown: msg.chunk,
+            text: msg.chunk,
+            done: false,
+            confidence: 85,
+            stance: msg.agent_key === "finance" ? "oppose" : "support",
+            phase: "challenge",
+            reasoning: "Debating position live.",
+            evidence: []
+          } as PlayedTurn];
         }
-        pos = Math.min(pos + 3, next.text.length);
-        const shown = next.text.slice(0, pos);
-        const done = pos >= next.text.length;
-        setTranscript((t) => t.map((x) => (x.id === id ? { ...x, shown, done } : x)));
-        if (done) schedule(playNext, 900);
-        else timerRef.current = window.setTimeout(step, 34 / speedRef.current);
-      };
-      step();
-    }, 1500);
-  }, [schedule]);
+      });
+    } else if (msg.type === "debate_done") {
+      setTranscript((t) => {
+        const last = t[t.length - 1];
+        if (last && !isUserTurn(last) && last.speaker === msg.agent_key) {
+          return t.map((x, i) => i === t.length - 1 ? { ...x, done: true } : x);
+        }
+        return t;
+      });
+    }
+  }, [messages]);
 
   const start = useCallback(
     async (question: string) => {
-      const s = resolveScript(question);
-      clearTimer();
-      setScript(s);
-      setTranscript([]);
-      setVerdict(null);
-      verdictRef.current = s.verdict;
-      queueRef.current = [...s.turns];
+      setTranscript([{ id: ++idRef.current, user: true, text: question }]);
       setSession("running");
       setPlaying(true);
 
       try {
-        const response = await api.post("/warroom", {
-          question,
-          verdict: s.verdict,
-          turns: s.turns.map(t => ({
-            is_user: false,
-            speaker: t.speaker,
-            responding_to: t.respondingTo,
-            phase: t.phase,
-            reasoning: t.reasoning,
-            text: t.text,
-            stance: t.stance,
-            confidence: t.confidence,
-            evidence: t.evidence
-          }))
-        });
-        setSessionId(response.data.id);
+        // Create a dummy session ID to connect to
+        const id = "live_debate_" + Date.now();
+        setSessionId(id);
+        
+        // Wait a tiny bit for socket to connect, then trigger
+        setTimeout(() => {
+           sendMessage({ type: "trigger_debate", question });
+        }, 1000);
       } catch (err) {
-        console.error("Failed to save session:", err);
+        console.error("Failed to start debate:", err);
       }
-
-      schedule(playNext, 400);
     },
-    [playNext, schedule],
+    [sendMessage],
   );
 
   const interject = useCallback(() => {
@@ -414,32 +374,21 @@ export function WarRoomPage() {
     if (!text || session !== "running") return;
     setInput("");
     setTranscript((t) => [...t, { id: ++idRef.current, user: true, text }]);
-    const upcoming = queueRef.current[0];
-    const speaker: CrewAgentKey = upcoming?.speaker ?? "coordinator";
-    queueRef.current.unshift(buildAckTurn(text, speaker, ackRef.current++, upcoming?.phase ?? "challenge"));
-  }, [input, session]);
+    sendMessage({ type: "trigger_debate", question: text });
+  }, [input, session, sendMessage]);
 
   const followUp = useCallback(() => {
     const q = followInput.trim();
     if (!q) return;
     setFollowInput("");
-    const { turns, verdict: v } = buildFollowUpTurns(q);
     setTranscript((t) => [...t, { id: ++idRef.current, user: true, text: q }]);
-    setVerdict(null);
-    verdictRef.current = v;
-    queueRef.current = [...turns];
-    setSession("running");
-    setPlaying(true);
-    schedule(playNext, 400);
-  }, [followInput, playNext, schedule]);
+    sendMessage({ type: "trigger_debate", question: q });
+  }, [followInput, sendMessage]);
 
   const restart = useCallback(() => {
-    clearTimer();
-    queueRef.current = [];
-    setScript(null);
     setTranscript([]);
-    setVerdict(null);
     setSession("idle");
+    setSessionId(null);
   }, []);
 
   /* Latest stance per executive — drives matrix + consensus */
@@ -471,7 +420,7 @@ export function WarRoomPage() {
               <div className="min-w-0">
                 <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-slate-500">the strategy table</p>
                 <h2 className="text-lg font-extrabold tracking-tight text-white">
-                  {script ? script.question : "Five executives. One decision."}
+                  {transcript.length > 0 && isUserTurn(transcript[0]) ? transcript[0].text : "Five executives. One decision."}
                 </h2>
               </div>
               {session !== "idle" && (
@@ -564,46 +513,6 @@ export function WarRoomPage() {
                     <TurnBubble key={t.id} turn={t} />
                   ),
                 )}
-
-                <AnimatePresence>
-                  {verdict && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 26, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                      className="glass-deep conic-ring rounded-3xl p-6"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-slate-500">signed verdict</p>
-                        <GlowChip color={verdict.confidence >= 70 ? "#059669" : "#D97706"}>confidence {verdict.confidence}%</GlowChip>
-                      </div>
-                      <p className="mt-3 text-[15px] font-semibold leading-relaxed text-white">{verdict.recommendation}</p>
-                      {verdict.dissent && (
-                        <p className="mt-3 rounded-xl border border-[#EC4899]/20 bg-[#EC4899]/[0.07] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-slate-300">
-                          <span className="font-bold" style={{ color: meta(verdict.dissent.agent).color }}>
-                            {meta(verdict.dissent.agent).persona} dissents:
-                          </span>{" "}
-                          {verdict.dissent.note}
-                        </p>
-                      )}
-                      <div className="mt-4 flex items-center justify-between border-t border-white/[0.07] pt-3.5">
-                        <div className="flex -space-x-1.5">
-                          {AGENTS.map((a) => (
-                            <span
-                              key={a.key}
-                              title={`${a.persona} signed`}
-                              className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0a0c14] text-[9px] font-extrabold"
-                              style={{ backgroundColor: `${a.color}30`, color: a.color }}
-                            >
-                              {a.persona[0]}
-                            </span>
-                          ))}
-                        </div>
-                        <span className="font-mono text-[9px] uppercase tracking-widest text-slate-500">crewmind war room</span>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
 
               {/* Executive Panel */}

@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
-import { Download, FlaskConical, Save, Trash2 } from "lucide-react";
+import { Download, FlaskConical, Save, Trash2, Mic } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
 
 import { AppShell } from "#/components/layout/AppShell";
+import { api } from "#/api/client";
 import { BlockTitle, GlowChip, Panel } from "#/components/os/ui";
 import { PageHero } from "#/components/system/shared";
 import { STANCE_COLOR } from "#/components/warroom/scripts";
@@ -112,7 +113,52 @@ export function SimulatorPage() {
   const [saved, setSaved] = useState<Saved[]>([]);
   const [name, setName] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const startListening = () => {
+    // @ts-ignore
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech Recognition is not supported in this browser.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => setIsListening(true);
+    
+    recognition.onresult = async (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      try {
+        const { data } = await api.post("/warroom/voice-command", {
+          transcript,
+          current_levers: levers
+        });
+        setLevers(data.new_levers);
+        
+        if ('speechSynthesis' in window) {
+           const utterance = new SpeechSynthesisUtterance(data.understood_command);
+           window.speechSynthesis.speak(utterance);
+        }
+      } catch (err) {
+        console.error("Voice parsing failed:", err);
+      }
+    };
+    
+    recognition.onerror = (e: any) => {
+      console.error(e);
+      setIsListening(false);
+    };
+    
+    recognition.onend = () => setIsListening(false);
+    
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
 
   const p = useMemo(() => project(levers), [levers]);
   const base = useMemo(() => project(BASELINE), []);
@@ -236,14 +282,26 @@ export function SimulatorPage() {
         accent="commit."
         body="Pull the levers. The projection reacts instantly — and so do your five executives."
         action={
-          <button
-            onClick={downloadPDF}
-            disabled={isExporting}
-            className="flex items-center gap-2 rounded-xl bg-crew-500 px-4 py-2 text-sm font-bold text-white shadow-glow transition-all hover:bg-crew-400 disabled:opacity-50"
-          >
-            <Download className="h-4 w-4" />
-            {isExporting ? "Generating PDF..." : "Download Report"}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={isListening ? () => recognitionRef.current?.stop() : startListening}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-xl transition-all shadow-glow",
+                isListening ? "bg-red-500 text-white animate-pulse" : "bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white"
+              )}
+              title="Voice Briefing (e.g. 'Cut marketing by 50K')"
+            >
+              <Mic className="h-4 w-4" />
+            </button>
+            <button
+              onClick={downloadPDF}
+              disabled={isExporting}
+              className="flex items-center gap-2 rounded-xl bg-crew-500 px-4 py-2 text-sm font-bold text-white shadow-glow transition-all hover:bg-crew-400 disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              {isExporting ? "Generating PDF..." : "Download Report"}
+            </button>
+          </div>
         }
       />
 

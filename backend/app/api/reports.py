@@ -49,3 +49,37 @@ async def get_report(
     if report is None or report.workspace_id != workspace_id:
         raise HTTPException(status_code=404, detail="Report not found")
     return _to_response(report)
+
+from pydantic import BaseModel
+from app.services.llm.gemini_client import chat
+
+class TimelineEvent(BaseModel):
+    id: str
+    title: str
+    description: str
+    date: str
+    type: str # 'risk' or 'opportunity'
+    impact_score: int # 1 to 10
+    agent_rationale: str
+
+class CrystalBallResponse(BaseModel):
+    events: list[TimelineEvent]
+
+@router.get("/crystal-ball/predict")
+async def crystal_ball_predict(
+    ctx: RequestContext = Depends(get_request_context)
+) -> dict:
+    """Predicts 3 risk events and 3 opportunity events over the next 12 months using the Strategy Agent."""
+    
+    prompt = "Based on current market conditions and general corporate strategy, predict 3 major risk events and 3 major opportunity windows that could occur in the next 12 months. Assign each a future date (YYYY-MM-DD), an impact score (1-10), and a detailed 2-sentence rationale from a Chief Strategy Officer perspective."
+    system_instruction = "You are the Chief Strategy Officer AI. Output strictly valid JSON conforming to the requested schema."
+    
+    try:
+        response_str = await chat(
+            system=system_instruction,
+            user_message=prompt,
+            response_schema=CrystalBallResponse
+        )
+        return json.loads(response_str)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate prediction: {e}")

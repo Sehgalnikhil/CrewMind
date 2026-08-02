@@ -267,11 +267,34 @@ async def dashboard_websocket(websocket: WebSocket, token: str | None = None) ->
         ws_manager.disconnect(workspace_id, websocket)
 
 
+from app.services.llm.gemini_client import stream_chat
+import asyncio
+
+async def _run_debate_agent(ws_manager, room_id: str, agent_key: str, prompt: str, system: str):
+    try:
+        async for chunk in stream_chat(system=system, user_message=prompt):
+            await ws_manager.broadcast(room_id, {
+                "type": "debate_chunk",
+                "agent_key": agent_key,
+                "chunk": chunk
+            })
+        await ws_manager.broadcast(room_id, {
+            "type": "debate_done",
+            "agent_key": agent_key
+        })
+    except Exception as e:
+        logger.error(f"Debate streaming error for {agent_key}: {e}")
+        await ws_manager.broadcast(room_id, {
+            "type": "debate_error",
+            "agent_key": agent_key,
+            "message": str(e)
+        })
+
 @router.websocket("/ws/warroom/{session_id}")
 async def war_room_websocket(websocket: WebSocket, session_id: str, token: str | None = None) -> None:
     """
     WebSocket for War Room sessions.
-    Currently used to broadcast interjections or status updates between connected clients.
+    Handles trigger_debate for live multi-agent streaming.
     """
     auth = await _authenticate(token)
     if auth is None:
@@ -289,16 +312,39 @@ async def war_room_websocket(websocket: WebSocket, session_id: str, token: str |
             await websocket.close()
             return
 
-    await ws_manager.connect(f"warroom_{session_id}", websocket)
+    room_id = f"warroom_{session_id}"
+    await ws_manager.connect(room_id, websocket)
     try:
         while True:
-            # Broadcast any received messages to other clients in this session
             raw = await websocket.receive_text()
             try:
                 payload = json.loads(raw)
             except json.JSONDecodeError:
                 continue
-            await ws_manager.broadcast(f"warroom_{session_id}", payload)
+                
+            if payload.get("type") == "trigger_debate":
+                question = payload.get("question", "")
+                
+                # Agent 1: CFO (Finance) arguing strictly on numbers/burn rate
+                asyncio.create_task(_run_debate_agent(
+                    ws_manager, room_id, "finance", 
+                    prompt=f"Debate topic: {question}. Provide a concise 2-paragraph stance focusing heavily on margins, burn rate, and runway. Be aggressive about protecting cash.",
+                    system="You are the CFO in a War Room debate. Be extremely concise. Output only your spoken argument."
+                ))
+                
+                # Agent 2: CMO (Operations/Strategy) arguing for growth
+                # Wait 2 seconds so the CFO starts first
+                async def delay_cmo():
+                    await asyncio.sleep(2)
+                    await _run_debate_agent(
+                        ws_manager, room_id, "operations", 
+                        prompt=f"Debate topic: {question}. Provide a concise 2-paragraph stance focusing on scaling, operational throughput, and grabbing market share, directly opposing the CFO's conservative stance.",
+                        system="You are the COO in a War Room debate. Be extremely concise. Output only your spoken argument."
+                    )
+                asyncio.create_task(delay_cmo())
+                
+            else:
+                await ws_manager.broadcast(room_id, payload)
     except WebSocketDisconnect:
-        ws_manager.disconnect(f"warroom_{session_id}", websocket)
+        ws_manager.disconnect(room_id, websocket)
 

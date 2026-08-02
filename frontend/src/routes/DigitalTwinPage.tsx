@@ -3,6 +3,9 @@ import { ArrowRight, MessageSquare, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { useMutation } from "@tanstack/react-query";
+import { api } from "#/api/client";
+
 import { AppShell } from "#/components/layout/AppShell";
 import { BlockTitle, GlowChip, Panel } from "#/components/os/ui";
 import { PageHero, MeterBar } from "#/components/system/shared";
@@ -142,6 +145,33 @@ export function DigitalTwinPage() {
   const [openDept, setOpenDept] = useState<Dept | null>(null);
   const totalArr = useMemo(() => CUSTOMERS.reduce((s, c) => s + c.arr, 0), []);
 
+  const [competitorUrl, setCompetitorUrl] = useState("");
+  const [twinProfile, setTwinProfile] = useState<any>(null);
+  const [debateMessages, setDebateMessages] = useState<{role: 'user' | 'ai', text: string}[]>([]);
+  const [debateInput, setDebateInput] = useState("");
+
+  const scrapeMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post("/competitors/scrape", { url: competitorUrl });
+      return data;
+    },
+    onSuccess: (data) => setTwinProfile(data)
+  });
+
+  const debateMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post("/competitors/debate", { url: competitorUrl, user_message: debateInput });
+      return data.response;
+    },
+    onMutate: () => {
+      setDebateMessages(prev => [...prev, { role: 'user', text: debateInput }]);
+      setDebateInput("");
+    },
+    onSuccess: (response) => {
+      setDebateMessages(prev => [...prev, { role: 'ai', text: response }]);
+    }
+  });
+
   return (
     <AppShell title="Digital Twin" wide>
       <PageHero
@@ -245,18 +275,89 @@ export function DigitalTwinPage() {
 
         {/* competitors */}
         <Panel delay={0.25} className="p-6">
-          <BlockTitle label="scout's watchlist" title="Competitors" />
-          <div className="flex flex-col gap-2.5">
-            {COMPETITORS.map((c) => (
-              <div key={c.name} className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3.5">
-                <div className="flex items-center justify-between">
-                  <p className="text-[13px] font-bold text-white">{c.name}</p>
-                  <GlowChip color={c.color}>{c.threat} threat</GlowChip>
-                </div>
-                <p className="mt-1.5 text-[11.5px] leading-relaxed text-slate-400">{c.note}</p>
-              </div>
-            ))}
+          <BlockTitle label="scout's watchlist" title="Competitor Twin" />
+          
+          <div className="mb-4">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Competitor URL (e.g. acme.com)"
+                value={competitorUrl}
+                onChange={(e) => setCompetitorUrl(e.target.value)}
+                className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-crew-500/40"
+              />
+              <button
+                onClick={() => scrapeMutation.mutate()}
+                disabled={scrapeMutation.isPending || !competitorUrl}
+                className="rounded-xl bg-crew-500 px-3 py-2 text-sm font-bold text-white shadow-glow disabled:opacity-50"
+              >
+                {scrapeMutation.isPending ? "Scanning..." : "Clone"}
+              </button>
+            </div>
           </div>
+
+          {twinProfile ? (
+            <div className="flex flex-col gap-3">
+              <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[14px] font-bold text-white">{twinProfile.name}</p>
+                  <GlowChip color={twinProfile.threat_level === 'High' ? '#EC4899' : twinProfile.threat_level === 'Medium' ? '#D97706' : '#059669'}>{twinProfile.threat_level} threat</GlowChip>
+                </div>
+                <p className="mb-3 text-[12px] leading-relaxed text-slate-300">{twinProfile.positioning}</p>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <span className="font-bold text-emerald-400">Strengths:</span>
+                    <ul className="list-disc pl-3 text-slate-400">
+                      {twinProfile.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                    </ul>
+                  </div>
+                  <div>
+                    <span className="font-bold text-pink-400">Weaknesses:</span>
+                    <ul className="list-disc pl-3 text-slate-400">
+                      {twinProfile.weaknesses.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Debate Section */}
+              <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4 flex flex-col h-[250px]">
+                <div className="flex-1 overflow-y-auto mb-3 space-y-2 pr-1">
+                  {debateMessages.map((msg, i) => (
+                    <div key={i} className={cn("text-[12px] rounded-lg p-2 max-w-[85%]", msg.role === 'user' ? 'bg-crew-500/20 text-crew-100 ml-auto' : 'bg-white/5 text-slate-300 mr-auto')}>
+                      <span className="font-bold block mb-0.5 text-[10px] opacity-50">{msg.role === 'user' ? 'You' : twinProfile.name + ' CEO'}</span>
+                      {msg.text}
+                    </div>
+                  ))}
+                  {debateMutation.isPending && (
+                    <div className="bg-white/5 text-slate-400 rounded-lg p-2 max-w-[85%] text-[12px] animate-pulse">Typing...</div>
+                  )}
+                </div>
+                <div className="flex gap-2 mt-auto">
+                  <input
+                    type="text"
+                    placeholder="Debate them..."
+                    value={debateInput}
+                    onChange={(e) => setDebateInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !debateMutation.isPending && debateInput && debateMutation.mutate()}
+                    className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12px] text-white outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {COMPETITORS.map((c) => (
+                <div key={c.name} className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[13px] font-bold text-white">{c.name}</p>
+                    <GlowChip color={c.color}>{c.threat} threat</GlowChip>
+                  </div>
+                  <p className="mt-1.5 text-[11.5px] leading-relaxed text-slate-400">{c.note}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </Panel>
 
         {/* contracts & risks */}

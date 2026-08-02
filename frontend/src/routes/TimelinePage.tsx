@@ -1,11 +1,22 @@
-import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Sparkles, AlertTriangle, TrendingUp } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { api } from "#/api/client";
 import { listDocuments } from "#/api/documents";
 import { listReports } from "#/api/reports";
+
+type PredictiveEvent = {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  type: "risk" | "opportunity";
+  impact_score: number;
+  agent_rationale: string;
+};
 import { AppShell } from "#/components/layout/AppShell";
 import { GlowChip, Panel } from "#/components/os/ui";
 import { PageHero } from "#/components/system/shared";
@@ -80,6 +91,15 @@ export function TimelinePage() {
     return [...g.entries()];
   }, [filtered]);
 
+  const predictMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.get<{ events: PredictiveEvent[] }>("/reports/crystal-ball/predict");
+      return data.events;
+    }
+  });
+
+  const [selectedPrediction, setSelectedPrediction] = useState<PredictiveEvent | null>(null);
+
   return (
     <AppShell title="Timeline" wide>
       <PageHero
@@ -88,6 +108,64 @@ export function TimelinePage() {
         accent="one axis."
         body="Reports, decisions, documents, meetings and alerts — the life of the company, in order."
       />
+
+      {/* Crystal Ball Predictive Engine */}
+      <Panel delay={0.05} className="mb-5 p-5 border border-crew-500/30 bg-crew-500/5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="h-4 w-4 text-crew-400" />
+              <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-crew-400 font-bold">Crystal Ball Engine</p>
+            </div>
+            <p className="text-sm text-slate-300">Predictive forecast of risks and opportunities over the next 12 months based on organizational memory.</p>
+          </div>
+          <button
+            onClick={() => predictMutation.mutate()}
+            disabled={predictMutation.isPending}
+            className="shrink-0 rounded-xl bg-crew-500 px-4 py-2 text-sm font-bold text-white shadow-glow transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
+          >
+            {predictMutation.isPending ? "Predicting Future..." : "Generate Forecast"}
+          </button>
+        </div>
+
+        {predictMutation.data && (
+          <div className="mt-6 pt-6 border-t border-crew-500/20">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {predictMutation.data.map(event => (
+                <div 
+                  key={event.id}
+                  onClick={() => setSelectedPrediction(event)}
+                  className="cursor-pointer glass holo-sheen rounded-2xl p-4 transition-transform hover:-translate-y-1"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <GlowChip color={event.type === 'risk' ? '#EC4899' : '#10B981'}>
+                      {event.type === 'risk' ? <AlertTriangle className="h-3 w-3 inline mr-1" /> : <TrendingUp className="h-3 w-3 inline mr-1" />}
+                      {event.date}
+                    </GlowChip>
+                    <span className="font-mono text-[10px] text-slate-400">Impact: {event.impact_score}/10</span>
+                  </div>
+                  <p className="font-bold text-white text-sm mb-1">{event.title}</p>
+                  <p className="text-xs text-slate-400 line-clamp-2">{event.description}</p>
+                  
+                  <AnimatePresence>
+                    {selectedPrediction?.id === event.id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-3 pt-3 border-t border-white/10"
+                      >
+                        <p className="font-mono text-[9px] uppercase tracking-widest text-slate-500 mb-1">Agent Rationale</p>
+                        <p className="text-xs text-slate-300 italic">"{event.agent_rationale}"</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Panel>
 
       {/* density strip */}
       <Panel delay={0.05} className="mb-5 p-5">

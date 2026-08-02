@@ -89,3 +89,43 @@ async def get_war_room_session(session_id: str, ctx: RequestContext = Depends(ge
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         return session
+
+
+from app.schemas.war_room import VoiceCommandRequest, VoiceCommandResponse
+from app.services.llm.gemini_client import chat
+
+@router.post("/voice-command", response_model=VoiceCommandResponse)
+async def handle_voice_command(
+    payload: VoiceCommandRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> VoiceCommandResponse:
+    """Parse a voice command into updated scenario levers using Gemini."""
+    system_prompt = (
+        "You are Atlas, the AI Executive Assistant for Crewmind. Your job is to parse voice commands "
+        "and update the current scenario levers. Return a valid JSON object matching the requested schema.\n"
+        "Lever constraints:\n"
+        "- priceChange: -20 to 30 (%)\n"
+        "- headcount: -5 to 15\n"
+        "- marketing: 50 to 300 (K/mo)\n"
+        "- churn: 1 to 6 (%)\n"
+        "- euEntry: true/false\n"
+    )
+    
+    user_prompt = (
+        f"Current Levers: {payload.current_levers.model_dump_json()}\n"
+        f"User Voice Command: '{payload.transcript}'\n\n"
+        "Adjust the levers accordingly and provide a short, confident acknowledgement in `understood_command` (e.g., 'Cutting marketing by 50K and entering the EU market.')."
+    )
+    
+    raw_response = await chat(
+        system=system_prompt,
+        user_message=user_prompt,
+        response_schema=VoiceCommandResponse,
+    )
+    
+    import json
+    try:
+        data = json.loads(raw_response)
+        return VoiceCommandResponse(**data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to parse LLM response")
