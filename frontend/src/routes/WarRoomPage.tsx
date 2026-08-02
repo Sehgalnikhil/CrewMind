@@ -299,7 +299,7 @@ export function WarRoomPage() {
   const [input, setInput] = useState("");
   const [followInput, setFollowInput] = useState("");
   const [selectedExecutive, setSelectedExecutive] = useState<CrewAgentKey | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string>("live_debate_" + Date.now());
 
   const { messages, sendMessage } = useWarRoomSocket(sessionId);
   
@@ -344,6 +344,10 @@ export function WarRoomPage() {
         }
         return t;
       });
+    } else if (msg.type === "debate_error") {
+      alert(`Debate error from ${msg.agent_key}: ${msg.message}`);
+      setPlaying(false);
+      setSession("idle");
     }
   }, [messages]);
 
@@ -354,14 +358,7 @@ export function WarRoomPage() {
       setPlaying(true);
 
       try {
-        // Create a dummy session ID to connect to
-        const id = "live_debate_" + Date.now();
-        setSessionId(id);
-        
-        // Wait a tiny bit for socket to connect, then trigger
-        setTimeout(() => {
-           sendMessage({ type: "trigger_debate", question });
-        }, 1000);
+        sendMessage({ type: "trigger_debate", question });
       } catch (err) {
         console.error("Failed to start debate:", err);
       }
