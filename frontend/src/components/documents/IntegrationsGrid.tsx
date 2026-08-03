@@ -70,7 +70,7 @@ export function IntegrationsGrid() {
 
   const integrations = [
     {
-      id: "drive",
+      id: "google",
       name: "Google Workspace",
       description: "Sync Drive, Docs, and Sheets",
       icon: HardDrive,
@@ -112,7 +112,6 @@ export function IntegrationsGrid() {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {integrations.map((app, i) => {
         const Icon = app.icon;
-        const isDrive = app.id === "drive";
         
         return (
           <Panel key={app.id} delay={0.1 + i * 0.05} className="flex flex-col justify-between p-5">
