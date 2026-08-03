@@ -259,7 +259,11 @@ async def agent_run_progress_websocket(websocket: WebSocket, run_id: str, token:
 
         # If the run already finished before the client connected, replay the
         # terminal state immediately instead of hanging waiting for an event.
-        if run.status in ("completed", "failed"):
+        if run.status == "failed":
+            await websocket.send_json({"type": "failed", "message": run.error_message or "Run failed."})
+            await websocket.close()
+            return
+        elif run.status == "completed":
             await websocket.close()
             return
 

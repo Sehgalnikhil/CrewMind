@@ -9,7 +9,7 @@ export const queryClient = new QueryClient({
   },
 });
 
-export const api = axios.create({ baseURL: "/api" });
+export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || "/api" });
 
 let getTokenFn: (() => Promise<string | null>) | null = null;
 
@@ -21,10 +21,12 @@ export function getWsUrl(path: string, token?: string | null): string {
   let wsBase = "";
   if (import.meta.env.VITE_WS_URL) {
     wsBase = import.meta.env.VITE_WS_URL;
-  } else if (import.meta.env.PROD) {
-    // Netlify does not support proxying WebSockets via _redirects.
-    // We must connect directly to the Render production backend.
-    wsBase = "wss://crewmind-bjlj.onrender.com";
+  } else if (import.meta.env.VITE_API_URL) {
+    // E.g. https://api.mybackend.com/api -> wss://api.mybackend.com
+    const url = new URL(import.meta.env.VITE_API_URL);
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    // Remove trailing /api if present so we mount at root
+    wsBase = url.origin;
   } else {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;

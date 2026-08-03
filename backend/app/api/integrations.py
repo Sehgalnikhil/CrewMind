@@ -27,7 +27,7 @@ async def get_auth_url(
     if not workspace_id:
         raise HTTPException(status_code=400, detail="Workspace required")
 
-    redirect_uri = f"http://localhost:5173/api/integrations/{provider}/callback"
+    redirect_uri = f"{settings.frontend_url.rstrip('/')}/api/integrations/{provider}/callback"
 
     if provider == "github":
         if not settings.github_client_id:
@@ -63,7 +63,7 @@ async def oauth_callback(
     if not workspace_id:
         raise HTTPException(status_code=400, detail="Workspace state required")
 
-    redirect_uri = f"http://localhost:5173/api/integrations/{provider}/callback"
+    redirect_uri = f"{settings.frontend_url.rstrip('/')}/api/integrations/{provider}/callback"
     
     access_token = None
     refresh_token = None
@@ -140,7 +140,7 @@ async def oauth_callback(
 
     await db.commit()
     
-    return RedirectResponse(url="http://localhost:5173/documents")
+    return RedirectResponse(url=f"{settings.frontend_url.rstrip('/')}/documents")
 
 
 @router.post("/google/sync")

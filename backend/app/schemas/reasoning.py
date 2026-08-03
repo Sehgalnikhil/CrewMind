@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 class ToolAction(BaseModel):
     tool_name: str = Field(description="Name of the tool to execute (e.g., 'github_search_repositories', 'github_read_issue', 'google_search_drive', 'slack_search_messages', 'slack_send_message')")
-    arguments: dict[str, Any] = Field(description="Arguments required for the tool. For github: query, repo_full_name, issue_number. For google: query, document_id. For slack: query, channel, text.")
+    arguments_json: str = Field(description="A JSON-formatted string containing the arguments required for the tool. For github: query, repo_full_name, issue_number. For google: query, document_id. For slack: query, channel, text.")
 
 class SpawnedTask(BaseModel):
     agent_key: str = Field(description="The key of the agent to delegate to (e.g., 'research', 'legal').")

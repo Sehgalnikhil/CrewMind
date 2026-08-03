@@ -202,7 +202,11 @@ class BaseAgent(ABC):
                 
                 tool_results_text = f"\n\n## Tool Results (Iteration {attempt+1})\n"
                 for tool in reasoning.tool_actions:
-                    res_str = await execute_tool(tool.tool_name, tool.arguments, workspace_id, db)
+                    try:
+                        args = json.loads(tool.arguments_json) if tool.arguments_json else {}
+                    except json.JSONDecodeError:
+                        args = {}
+                    res_str = await execute_tool(tool.tool_name, args, workspace_id, db)
                     tool_results_text += f"\n### Result from {tool.tool_name}\n```json\n{res_str}\n```\n"
                 
                 extra_context += tool_results_text

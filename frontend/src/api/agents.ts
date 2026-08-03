@@ -2,18 +2,8 @@ import { api } from "#/api/client";
 import type { AgentRun } from "#/types";
 
 export async function startAgentRun(): Promise<AgentRun> {
-  try {
-    const { data } = await api.post<AgentRun>("/agents/runs");
-    return data;
-  } catch (error) {
-    return {
-      id: "mock-run-123",
-      status: "pending",
-      trigger: "manual",
-      error_message: null,
-      created_at: new Date().toISOString()
-    } as AgentRun;
-  }
+  const { data } = await api.post<AgentRun>("/agents/runs");
+  return data;
 }
 
 export async function listAgentRuns(): Promise<AgentRun[]> {
