@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
 from app.core.security import decode_access_token
-from app.models.agent_run import AgentRun
+from app.models.agent_run import AgentRun, AgentRunOutput
 from app.models.conversation import Conversation, Message
 from app.models.rbac import OrganizationMember
 from app.models.user import User
@@ -228,10 +228,38 @@ async def agent_run_progress_websocket(websocket: WebSocket, run_id: str, token:
             await websocket.send_json({"type": "error", "message": "Run not found."})
             await websocket.close()
             return
+            
+        # Reconstruct current state for the client in case they missed events
+        from sqlalchemy import select
+        result = await db.execute(select(AgentRunOutput).where(AgentRunOutput.agent_run_id == run_id))
+        done_agents = {out.agent_key for out in result.scalars().all()}
+        
+        await websocket.send_json({"type": "run_status", "status": run.status})
+        
+        if run.status == "researching":
+            status = "done" if "research" in done_agents else "running"
+            await websocket.send_json({"type": "agent_status", "agent_key": "research", "status": status})
+        elif run.status == "analyzing":
+            await websocket.send_json({"type": "agent_status", "agent_key": "research", "status": "done"})
+            for key in ["strategy", "finance", "operations", "legal"]:
+                status = "done" if key in done_agents else "running"
+                await websocket.send_json({"type": "agent_status", "agent_key": key, "status": status})
+        elif run.status == "synthesizing":
+            for key in ["research", "strategy", "finance", "operations", "legal"]:
+                await websocket.send_json({"type": "agent_status", "agent_key": key, "status": "done"})
+            await websocket.send_json({"type": "agent_status", "agent_key": "coordinator", "status": "running"})
+        elif run.status == "completed":
+            for key in ["research", "strategy", "finance", "operations", "legal", "coordinator"]:
+                await websocket.send_json({"type": "agent_status", "agent_key": key, "status": "done"})
+            from app.models.report import Report
+            report = await db.execute(select(Report).where(Report.agent_run_id == run_id))
+            report = report.scalar_one_or_none()
+            if report:
+                await websocket.send_json({"type": "completed", "report_id": report.id})
+
         # If the run already finished before the client connected, replay the
         # terminal state immediately instead of hanging waiting for an event.
         if run.status in ("completed", "failed"):
-            await websocket.send_json({"type": "run_status", "status": run.status})
             await websocket.close()
             return
 
