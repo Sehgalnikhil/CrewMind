@@ -3,12 +3,14 @@ import { Bell, ChevronDown, FileText, LogOut, Menu, MoonStar, Search, Settings, 
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useUser } from "@clerk/react";
 
 import { listDocuments } from "#/api/documents";
 import { listReports } from "#/api/reports";
 import { OrgSwitcher } from "#/components/layout/OrgSwitcher";
 import { navByPath } from "#/lib/navigation";
 import { useAuthStore } from "#/stores/authStore";
+import { usePermissionStore } from "#/stores/permissionStore";
 import { useUiStore } from "#/stores/uiStore";
 import { cn } from "#/lib/utils";
 
@@ -77,7 +79,7 @@ function NotificationsMenu() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="glass-deep absolute right-[-40px] top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl sm:right-0 sm:w-80"
+            className="glass-deep absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl sm:w-80"
           >
             <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
               <p className="text-sm font-bold text-white">Activity</p>
@@ -131,7 +133,9 @@ export function Topbar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = useAuthStore((s) => s.user);
+  const { user: clerkUser } = useUser();
+  const authStoreUser = useAuthStore((s) => s.user);
+  const context = usePermissionStore((s) => s.context);
   const logout = useAuthStore((s) => s.logout);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -140,6 +144,10 @@ export function Topbar({
   const toggleBookmark = useUiStore((s) => s.toggleBookmark);
   const bookmarked = useUiStore((s) => s.bookmarks.some((b) => b.to === location.pathname));
   const currentNav = navByPath(location.pathname);
+
+  const fullName = clerkUser?.fullName ?? authStoreUser?.full_name;
+  const email = clerkUser?.primaryEmailAddress?.emailAddress ?? authStoreUser?.email;
+  const orgName = context?.organization?.name ?? authStoreUser?.org_name;
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -211,18 +219,18 @@ export function Topbar({
 
         <NotificationsMenu />
 
-        {user && (
+        {(clerkUser || authStoreUser) && (
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] p-1.5 pr-3 backdrop-blur-md transition-all hover:border-white/25"
             >
               <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br from-crew-500 to-[#0891CF] text-xs font-extrabold text-white shadow-glow">
-                {user.full_name.charAt(0)}
+                {fullName?.charAt(0) ?? "?"}
               </div>
               <div className="hidden text-left sm:block">
-                <p className="text-xs font-bold leading-tight text-white">{user.full_name}</p>
-                <p className="text-[10px] leading-tight text-slate-500">{user.org_name}</p>
+                <p className="text-xs font-bold leading-tight text-white">{fullName}</p>
+                <p className="text-[10px] leading-tight text-slate-500">{orgName}</p>
               </div>
               <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
             </button>
@@ -237,8 +245,8 @@ export function Topbar({
                   className="glass-deep absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl"
                 >
                   <div className="border-b border-white/[0.07] px-4 py-3">
-                    <p className="text-sm font-bold text-white">{user.full_name}</p>
-                    <p className="truncate text-xs text-slate-500">{user.email}</p>
+                    <p className="text-sm font-bold text-white">{fullName}</p>
+                    <p className="truncate text-xs text-slate-500">{email}</p>
                   </div>
                   <div className="p-2">
                     <Link
