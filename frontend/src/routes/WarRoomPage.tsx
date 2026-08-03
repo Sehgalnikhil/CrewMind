@@ -24,12 +24,12 @@ function meta(key: CrewAgentKey) {
 
 /* Seat positions along an arc, in % of the stage width/height */
 const SEATS: Record<string, { x: number; y: number }> = {
-  research: { x: 8, y: 52.6 },
-  finance: { x: 25, y: 38.3 },
-  strategy: { x: 50, y: 33 },
-  operations: { x: 75, y: 38.3 },
-  legal: { x: 92, y: 52.6 },
-  coordinator: { x: 50, y: 99 },
+  research: { x: 8, y: 55.2 },
+  finance: { x: 25, y: 42.7 },
+  strategy: { x: 50, y: 38 },
+  operations: { x: 75, y: 42.7 },
+  legal: { x: 92, y: 55.2 },
+  coordinator: { x: 50, y: 96 },
 };
 
 export interface PlayedTurn extends ScriptTurn {
@@ -59,11 +59,11 @@ function TableStage({ speaker, respondingTo, selected, onSelect }: { speaker: Cr
   const from = speaker ? SEATS[speaker] : null;
   const to = respondingTo && respondingTo !== "user" ? SEATS[respondingTo] : null;
   return (
-    <div className="relative h-44 w-full sm:h-52" aria-hidden>
+    <div className="relative h-48 w-full sm:h-56 mb-4" aria-hidden>
       {/* table surface */}
       <div 
         className="absolute rounded-[50%] border border-white/[0.08] bg-white/[0.02] grid-lines shadow-[inset_0_0_40px_rgba(0,0,0,0.5)]" 
-        style={{ left: "4%", width: "92%", top: "33%", height: "66%" }}
+        style={{ left: "4%", width: "92%", top: "38%", height: "58%" }}
       />
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
         {from && to && (
