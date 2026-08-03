@@ -8,12 +8,13 @@ import {
   PHASES,
   STANCE_COLOR,
   SUGGESTED_QUESTIONS,
+  SCRIPTS,
 } from "#/components/warroom/scripts";
-import type { PhaseKey, ScriptTurn } from "#/components/warroom/scripts";
+import type { PhaseKey, ScriptTurn, DeliberationScript } from "#/components/warroom/scripts";
 import { AGENTS, COORDINATOR_META, type CrewAgentKey } from "#/types";
 import { cn } from "#/lib/utils";
 import { ExecutivePanel } from "#/components/warroom/ExecutivePanel";
-import { useWarRoomSocket } from "#/hooks/useWarRoomSocket";
+// import { useWarRoomSocket } from "#/hooks/useWarRoomSocket";
 
 const CREW = [...AGENTS, COORDINATOR_META];
 
@@ -23,12 +24,12 @@ function meta(key: CrewAgentKey) {
 
 /* Seat positions along an arc, in % of the stage width/height */
 const SEATS: Record<string, { x: number; y: number }> = {
-  research: { x: 8, y: 62 },
-  finance: { x: 28, y: 24 },
-  strategy: { x: 50, y: 10 },
-  operations: { x: 72, y: 24 },
-  legal: { x: 92, y: 62 },
-  coordinator: { x: 50, y: 78 },
+  research: { x: 12, y: 67 },
+  finance: { x: 23, y: 46 },
+  strategy: { x: 50, y: 38 },
+  operations: { x: 77, y: 46 },
+  legal: { x: 88, y: 67 },
+  coordinator: { x: 50, y: 96 },
 };
 
 export interface PlayedTurn extends ScriptTurn {
@@ -299,9 +300,10 @@ export function WarRoomPage() {
   const [input, setInput] = useState("");
   const [followInput, setFollowInput] = useState("");
   const [selectedExecutive, setSelectedExecutive] = useState<CrewAgentKey | null>(null);
-  const [sessionId, setSessionId] = useState<string>("live_debate_" + Date.now());
 
-  const { messages, sendMessage } = useWarRoomSocket(sessionId);
+
+  // Use a local playback engine instead of websockets
+  const playbackRef = useRef<{ turnIdx: number; charIdx: number; script: DeliberationScript | null; active: boolean }>({ turnIdx: -1, charIdx: -1, script: null, active: false });
   
   const idRef = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -310,82 +312,94 @@ export function WarRoomPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [transcript]);
 
-  // Handle incoming websocket messages for live debate
+  // Static mock playback engine
   useEffect(() => {
-    if (!messages.length) return;
-    const msg = messages[messages.length - 1];
-    
-    if (msg.type === "debate_chunk") {
-      setTranscript((t) => {
-        const last = t[t.length - 1];
-        if (last && !isUserTurn(last) && last.speaker === msg.agent_key && !last.done) {
-          const shown = last.shown + msg.chunk;
-          return t.map((x, i) => i === t.length - 1 ? { ...x, shown, text: shown } : x);
-        } else {
-          return [...t, {
-            id: ++idRef.current,
-            speaker: msg.agent_key,
-            shown: msg.chunk,
-            text: msg.chunk,
-            done: false,
-            confidence: 85,
-            stance: msg.agent_key === "finance" ? "oppose" : "support",
-            phase: "challenge",
-            reasoning: "Debating position live.",
-            evidence: []
-          } as PlayedTurn];
-        }
-      });
-    } else if (msg.type === "debate_done") {
-      setTranscript((t) => {
-        const last = t[t.length - 1];
-        if (last && !isUserTurn(last) && last.speaker === msg.agent_key) {
-          return t.map((x, i) => i === t.length - 1 ? { ...x, done: true } : x);
-        }
-        return t;
-      });
-    } else if (msg.type === "debate_error") {
-      alert(`Debate error from ${msg.agent_key}: ${msg.message}`);
-      setPlaying(false);
-      setSession("idle");
-    }
-  }, [messages]);
+    if (session !== "running" || !playing || !playbackRef.current.active || !playbackRef.current.script) return;
 
-  const start = useCallback(
-    async (question: string) => {
-      setTranscript([{ id: ++idRef.current, user: true, text: question }]);
-      setSession("running");
-      setPlaying(true);
-
-      try {
-        sendMessage({ type: "trigger_debate", question });
-      } catch (err) {
-        console.error("Failed to start debate:", err);
+    let timeout: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      const state = playbackRef.current;
+      if (!state.script || state.turnIdx >= state.script.turns.length) {
+        setSession("verdict");
+        state.active = false;
+        return;
       }
-    },
-    [sendMessage],
-  );
+
+      const turn = state.script.turns[state.turnIdx];
+      
+      if (state.charIdx === 0) {
+        setTranscript(t => [...t, {
+          id: ++idRef.current,
+          speaker: turn.speaker,
+          respondingTo: turn.respondingTo,
+          phase: turn.phase,
+          reasoning: turn.reasoning,
+          stance: turn.stance,
+          confidence: turn.confidence,
+          evidence: turn.evidence || [],
+          text: turn.text,
+          shown: "",
+          done: false,
+        } as PlayedTurn]);
+        state.charIdx++;
+        timeout = setTimeout(tick, 1000 / speed);
+      } else if (state.charIdx <= turn.text.length) {
+        const chunk = turn.text.slice(0, state.charIdx);
+        setTranscript(t => {
+          const last = t[t.length - 1];
+          if (last && !isUserTurn(last) && last.speaker === turn.speaker) {
+             return t.map((x, i) => i === t.length - 1 ? { ...x, shown: chunk } : x);
+          }
+          return t;
+        });
+        state.charIdx += Math.floor(Math.random() * 3) + 2;
+        timeout = setTimeout(tick, (20 + Math.random() * 20) / speed);
+      } else {
+        setTranscript(t => {
+          const last = t[t.length - 1];
+          if (last && !isUserTurn(last) && last.speaker === turn.speaker) {
+             return t.map((x, i) => i === t.length - 1 ? { ...x, done: true, shown: turn.text } : x);
+          }
+          return t;
+        });
+        state.turnIdx++;
+        state.charIdx = 0;
+        timeout = setTimeout(tick, 800 / speed);
+      }
+    };
+
+    timeout = setTimeout(tick, 100);
+    return () => clearTimeout(timeout);
+  }, [session, playing, speed]);
+
+  const start = useCallback((question: string) => {
+    setTranscript([{ id: ++idRef.current, user: true, text: question }]);
+    const isPricing = question.toLowerCase().includes("pricing");
+    const script = SCRIPTS.find(s => s.id === (isPricing ? "pricing-change" : "eu-expansion")) || SCRIPTS[0];
+    playbackRef.current = { turnIdx: 0, charIdx: 0, script, active: true };
+    setSession("running");
+    setPlaying(true);
+  }, []);
 
   const interject = useCallback(() => {
     const text = input.trim();
     if (!text || session !== "running") return;
     setInput("");
     setTranscript((t) => [...t, { id: ++idRef.current, user: true, text }]);
-    sendMessage({ type: "trigger_debate", question: text });
-  }, [input, session, sendMessage]);
+  }, [input, session]);
 
   const followUp = useCallback(() => {
     const q = followInput.trim();
     if (!q) return;
     setFollowInput("");
     setTranscript((t) => [...t, { id: ++idRef.current, user: true, text: q }]);
-    sendMessage({ type: "trigger_debate", question: q });
-  }, [followInput, sendMessage]);
+  }, [followInput]);
 
   const restart = useCallback(() => {
     setTranscript([]);
     setSession("idle");
-    setSessionId(null);
+
+    playbackRef.current.active = false;
   }, []);
 
   /* Latest stance per executive — drives matrix + consensus */
