@@ -24,12 +24,12 @@ function meta(key: CrewAgentKey) {
 
 /* Seat positions along an arc, in % of the stage width/height */
 const SEATS: Record<string, { x: number; y: number }> = {
-  research: { x: 8, y: 67 },
-  finance: { x: 27, y: 43 },
-  strategy: { x: 50, y: 38 },
-  operations: { x: 73, y: 43 },
-  legal: { x: 92, y: 67 },
-  coordinator: { x: 50, y: 96 },
+  research: { x: 8, y: 52.6 },
+  finance: { x: 25, y: 38.3 },
+  strategy: { x: 50, y: 33 },
+  operations: { x: 75, y: 38.3 },
+  legal: { x: 92, y: 52.6 },
+  coordinator: { x: 50, y: 99 },
 };
 
 export interface PlayedTurn extends ScriptTurn {
