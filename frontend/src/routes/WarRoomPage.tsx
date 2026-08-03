@@ -24,14 +24,13 @@ function meta(key: CrewAgentKey) {
 
 /* Seat positions along an arc, in % of the stage width/height */
 const SEATS: Record<string, { x: number; y: number }> = {
-  research: { x: 8, y: 55.2 },
-  finance: { x: 25, y: 42.7 },
-  strategy: { x: 50, y: 38 },
-  operations: { x: 75, y: 42.7 },
-  legal: { x: 92, y: 55.2 },
-  coordinator: { x: 50, y: 96 },
+  research: { x: 9, y: 50 }, // Scout — left tip
+  finance: { x: 28, y: 28 }, // Ledger — upper-left curve
+  strategy: { x: 50, y: 20 }, // Atlas — top center
+  operations: { x: 72, y: 28 }, // Flux — upper-right curve
+  legal: { x: 91, y: 50 }, // Clause — right tip
+  coordinator: { x: 50, y: 80 }, // Nexus — bottom center
 };
-
 export interface PlayedTurn extends ScriptTurn {
   id: number;
   user?: never;
@@ -61,8 +60,8 @@ function TableStage({ speaker, respondingTo, selected, onSelect }: { speaker: Cr
   return (
     <div className="relative h-48 w-full sm:h-56 mb-4" aria-hidden>
       {/* table surface */}
-      <div 
-        className="absolute rounded-[50%] border border-white/[0.08] bg-white/[0.02] grid-lines shadow-[inset_0_0_40px_rgba(0,0,0,0.5)]" 
+      <div
+        className="absolute rounded-[50%] border border-white/[0.08] bg-white/[0.02] grid-lines shadow-[inset_0_0_40px_rgba(0,0,0,0.5)]"
         style={{ left: "4%", width: "92%", top: "38%", height: "58%" }}
       />
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -307,7 +306,7 @@ export function WarRoomPage() {
 
   // Use a local playback engine instead of websockets
   const playbackRef = useRef<{ turnIdx: number; charIdx: number; script: DeliberationScript | null; active: boolean }>({ turnIdx: -1, charIdx: -1, script: null, active: false });
-  
+
   const idRef = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -329,7 +328,7 @@ export function WarRoomPage() {
       }
 
       const turn = state.script.turns[state.turnIdx];
-      
+
       if (state.charIdx === 0) {
         setTranscript(t => [...t, {
           id: ++idRef.current,
@@ -351,7 +350,7 @@ export function WarRoomPage() {
         setTranscript(t => {
           const last = t[t.length - 1];
           if (last && !isUserTurn(last) && last.speaker === turn.speaker) {
-             return t.map((x, i) => i === t.length - 1 ? { ...x, shown: chunk } : x);
+            return t.map((x, i) => i === t.length - 1 ? { ...x, shown: chunk } : x);
           }
           return t;
         });
@@ -361,7 +360,7 @@ export function WarRoomPage() {
         setTranscript(t => {
           const last = t[t.length - 1];
           if (last && !isUserTurn(last) && last.speaker === turn.speaker) {
-             return t.map((x, i) => i === t.length - 1 ? { ...x, done: true, shown: turn.text } : x);
+            return t.map((x, i) => i === t.length - 1 ? { ...x, done: true, shown: turn.text } : x);
           }
           return t;
         });
