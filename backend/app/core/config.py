@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     slack_client_secret: str | None = None
 
     frontend_url: str = "http://localhost:5173"
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: list[str] = ["http://localhost:5173", "https://crewmindd.netlify.app", "*"]
 
     @property
     def has_llm_key(self) -> bool:
