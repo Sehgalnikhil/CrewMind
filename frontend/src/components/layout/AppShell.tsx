@@ -55,7 +55,7 @@ export function AppShell({
     <ContextMenuProvider>
       <div
         className={cn(
-          "world flex w-full h-screen overflow-hidden font-sans text-slate-100 antialiased selection:bg-crew-500 selection:text-white",
+          "world flex fixed inset-0 h-[100dvh] w-full overflow-hidden font-sans text-slate-100 antialiased selection:bg-crew-500 selection:text-white",
           theme === "bright" && "bright",
         )}
       >
