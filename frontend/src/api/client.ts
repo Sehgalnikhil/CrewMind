@@ -18,10 +18,20 @@ export function setGetTokenFn(fn: () => Promise<string | null>) {
 }
 
 export function getWsUrl(path: string, token?: string | null): string {
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = window.location.host;
+  let wsBase = "";
+  if (import.meta.env.VITE_WS_URL) {
+    wsBase = import.meta.env.VITE_WS_URL;
+  } else if (import.meta.env.PROD) {
+    // Netlify does not support proxying WebSockets via _redirects.
+    // We must connect directly to the Render production backend.
+    wsBase = "wss://crewmind-bjlj.onrender.com";
+  } else {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host;
+    wsBase = `${protocol}//${host}`;
+  }
   
-  const url = new URL(`${protocol}//${host}${path}`);
+  const url = new URL(`${wsBase}${path}`);
   if (token) {
     url.searchParams.set("token", token);
   }
