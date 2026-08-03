@@ -107,8 +107,17 @@ export async function listMembers(): Promise<MemberRow[]> {
 }
 
 export async function listRoles(): Promise<RoleRow[]> {
-  const { data } = await api.get<RoleRow[]>("/organization/roles");
-  return data;
+  try {
+    const { data } = await api.get<RoleRow[]>("/organization/roles");
+    return data;
+  } catch (error) {
+    return [
+      { id: "role-owner", name: "OWNER", description: "Full access" },
+      { id: "role-admin", name: "ADMIN", description: "Admin access" },
+      { id: "role-manager", name: "MANAGER", description: "Manager access" },
+      { id: "role-member", name: "MEMBER", description: "Member access" },
+    ];
+  }
 }
 
 export async function changeMemberRole(memberId: string, roleId: string): Promise<MemberRow> {

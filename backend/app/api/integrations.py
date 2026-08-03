@@ -1,7 +1,7 @@
 from typing import Any
 import urllib.parse
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -140,7 +140,114 @@ async def oauth_callback(
 
     await db.commit()
     
-    return RedirectResponse(url="http://localhost:5173/settings")
+    return RedirectResponse(url="http://localhost:5173/documents")
+
+
+@router.post("/google/sync")
+async def sync_google_drive(
+    background_tasks: BackgroundTasks,
+    ctx: RequestContext = Depends(RequiresPermission("workspace.manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Sync recent files from Google Drive and ingest them into the knowledge base.
+    """
+    import uuid
+    from google.oauth2.credentials import Credentials
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaIoBaseDownload
+    from app.models.document import Document
+    from app.models.job import BackgroundJob
+    from app.api.documents import _run_ingest_in_new_session
+    
+    workspace_id = ctx.workspace.id if ctx.workspace else None
+    if not workspace_id:
+        raise HTTPException(status_code=400, detail="Workspace required")
+        
+    result = await db.execute(
+        select(Integration).where(
+            Integration.workspace_id == workspace_id,
+            Integration.provider == "google"
+        )
+    )
+    integration = result.scalar_one_or_none()
+    if not integration or not integration.access_token:
+        raise HTTPException(status_code=400, detail="Google integration not connected")
+        
+    creds = Credentials(
+        token=integration.access_token,
+        refresh_token=integration.refresh_token,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=settings.google_client_id,
+        client_secret=settings.google_client_secret,
+    )
+    
+    try:
+        service = build('drive', 'v3', credentials=creds)
+        # Query for recent PDFs and Google Docs
+        query = "mimeType='application/pdf' or mimeType='application/vnd.google-apps.document'"
+        results = service.files().list(q=query, pageSize=5, fields="nextPageToken, files(id, name, mimeType)", orderBy="modifiedTime desc").execute()
+        items = results.get('files', [])
+        
+        if not items:
+            return {"status": "success", "synced": 0}
+            
+        org_dir = settings.storage_dir / workspace_id
+        org_dir.mkdir(parents=True, exist_ok=True)
+        
+        synced_count = 0
+        for item in items:
+            file_id = item['id']
+            file_name = item['name']
+            mime_type = item['mimeType']
+            
+            if mime_type == 'application/vnd.google-apps.document':
+                request = service.files().export_media(fileId=file_id, mimeType='application/pdf')
+                if not file_name.endswith(".pdf"):
+                    file_name += ".pdf"
+                file_type = "pdf"
+            else:
+                request = service.files().get_media(fileId=file_id)
+                file_type = "pdf"
+                
+            stored_name = f"{uuid.uuid4()}.{file_type}"
+            storage_path = org_dir / stored_name
+            
+            with open(storage_path, "wb") as fh:
+                downloader = MediaIoBaseDownload(fh, request)
+                done = False
+                while done is False:
+                    status, done = downloader.next_chunk()
+            
+            document = Document(
+                workspace_id=workspace_id,
+                uploaded_by=ctx.user.id,
+                filename=file_name,
+                file_type=file_type,
+                storage_path=str(storage_path),
+                status="uploaded",
+            )
+            db.add(document)
+            
+            job = BackgroundJob(
+                workspace_id=workspace_id,
+                user_id=ctx.user.id,
+                task_type="document_processing",
+                status="pending"
+            )
+            db.add(job)
+            await db.flush()
+            
+            background_tasks.add_task(_run_ingest_in_new_session, document.id, workspace_id, job.id)
+            synced_count += 1
+            
+        await db.commit()
+        return {"status": "success", "synced": synced_count}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/")

@@ -19,3 +19,8 @@ export async function getAuthUrl(provider: string): Promise<{ url: string }> {
 export async function disconnectIntegration(provider: string): Promise<void> {
   await api.delete(`/integrations/${provider}`);
 }
+
+export async function syncGoogleDrive(): Promise<{ status: string, synced: number }> {
+  const res = await api.post<{ status: string, synced: number }>("/integrations/google/sync");
+  return res.data;
+}

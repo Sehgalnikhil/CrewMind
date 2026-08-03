@@ -59,17 +59,22 @@ function Navbar() {
             ["Capabilities", "#features"],
           ].map(([label, href]) => {
             const isInternal = href.startsWith("/");
-            const Tag = isInternal ? Link : "a";
-            return (
-              <Tag 
-                key={href} 
-                to={isInternal ? href : undefined} 
-                href={!isInternal ? href : undefined} 
-                className="group relative text-sm font-semibold text-slate-300 transition-colors hover:text-white"
-              >
+            const className = "group relative text-sm font-semibold text-slate-300 transition-colors hover:text-white";
+            const content = (
+              <>
                 {label}
                 <span className="absolute -bottom-1 left-0 h-px w-0 bg-gradient-to-r from-crew-400 to-[#0891CF] transition-all duration-300 group-hover:w-full" />
-              </Tag>
+              </>
+            );
+            
+            return isInternal ? (
+              <Link key={href} to={href} className={className}>
+                {content}
+              </Link>
+            ) : (
+              <a key={href} href={href} className={className}>
+                {content}
+              </a>
             );
           })}
         </nav>

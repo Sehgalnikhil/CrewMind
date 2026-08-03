@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Building2, Check, ChevronDown, Plus, Send } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 
@@ -53,6 +53,18 @@ export function OrganizationPage() {
     },
   });
   const [profile, setProfile] = useState({ industry: "B2B SaaS", size: "51–100", founded: "2021" });
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const roleDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
+        setIsRoleDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => localStorage.setItem("crewmind-workspace", workspace), [workspace]);
 
@@ -144,16 +156,51 @@ export function OrganizationPage() {
               aria-label="Invite email"
               className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
             />
-            <select
-              value={inviteRoleId || roles?.find((r) => r.name === "MEMBER")?.id || ""}
-              onChange={(e) => setInviteRoleId(e.target.value)}
-              aria-label="Role"
-              className="rounded-lg border border-white/10 bg-[#0B0D14] px-2 py-1.5 text-xs font-bold text-slate-300 outline-none"
-            >
-              {(Array.isArray(roles) ? roles : []).filter((r) => r.name !== "OWNER").map((r) => (
-                <option key={r.id} value={r.id}>{r.name.charAt(0) + r.name.slice(1).toLowerCase()}</option>
-              ))}
-            </select>
+            <div className="relative" ref={roleDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
+                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#0B0D14] px-2 py-1.5 text-xs font-bold text-slate-300 outline-none transition-colors hover:border-crew-500/40"
+              >
+                {(() => {
+                  const currentRoleId = inviteRoleId || roles?.find((r) => r.name === "MEMBER")?.id;
+                  const role = roles?.find((r) => r.id === currentRoleId);
+                  return role ? role.name.charAt(0) + role.name.slice(1).toLowerCase() : "Role";
+                })()}
+                <ChevronDown className="h-3 w-3 text-slate-500" />
+              </button>
+              <AnimatePresence>
+                {isRoleDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full z-[100] mt-1.5 w-32 origin-top-right overflow-hidden rounded-xl border border-white/[0.08] bg-[#0F111A] py-1 shadow-2xl backdrop-blur-xl"
+                  >
+                    {(Array.isArray(roles) ? roles : []).filter((r) => r.name !== "OWNER").map((r) => {
+                      const isSelected = r.id === (inviteRoleId || roles?.find((r) => r.name === "MEMBER")?.id);
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() => {
+                            setInviteRoleId(r.id);
+                            setIsRoleDropdownOpen(false);
+                          }}
+                          className={cn(
+                            "flex w-full items-center justify-between px-3 py-2 text-left text-xs transition-colors hover:bg-white/[0.04]",
+                            isSelected ? "font-bold text-white" : "font-semibold text-slate-400"
+                          )}
+                        >
+                          {r.name.charAt(0) + r.name.slice(1).toLowerCase()}
+                          {isSelected && <Check className="h-3 w-3 text-crew-400" />}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             <button
               onClick={() => {
                 const roleId = inviteRoleId || roles?.find((r) => r.name === "MEMBER")?.id;

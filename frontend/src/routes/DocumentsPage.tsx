@@ -6,6 +6,7 @@ import { useMemo, useState, useEffect } from "react";
 import { listDocuments } from "#/api/documents";
 import { AppShell } from "#/components/layout/AppShell";
 import { DocumentCard } from "#/components/documents/DocumentCard";
+import { IntegrationsGrid } from "#/components/documents/IntegrationsGrid";
 import { UploadDropzone } from "#/components/documents/UploadDropzone";
 import { BlockTitle, EmptyState, OrbitalLoader, Panel } from "#/components/os/ui";
 import { CountUp } from "#/components/world/primitives";
@@ -101,8 +102,19 @@ export function DocumentsPage() {
           ))}
         </div>
 
-        {/* upload */}
+        {/* integrations */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}>
+          <BlockTitle label="sync" title="1-Click Knowledge Sync" />
+          <div className="mt-4">
+            <IntegrationsGrid />
+          </div>
+        </motion.div>
+
+        {/* upload */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}>
+          <div className="mb-4">
+            <BlockTitle label="manual" title="Upload Documents" />
+          </div>
           <UploadDropzone />
         </motion.div>
 
