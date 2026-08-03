@@ -17,6 +17,17 @@ export function setGetTokenFn(fn: () => Promise<string | null>) {
   getTokenFn = fn;
 }
 
+export function getWsUrl(path: string, token?: string | null): string {
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const host = window.location.host;
+  
+  const url = new URL(`${protocol}//${host}${path}`);
+  if (token) {
+    url.searchParams.set("token", token);
+  }
+  return url.toString();
+}
+
 api.interceptors.request.use(async (config) => {
   let token = null;
   if (getTokenFn) {

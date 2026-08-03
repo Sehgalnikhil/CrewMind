@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Building2, CheckCircle2, Cpu, ShieldCheck, User, XCircle } from "lucide-react";
+import { useUser } from "@clerk/react";
 
 import { getStatus } from "#/api/status";
 import { getIntegrations, getAuthUrl, disconnectIntegration } from "#/api/integrations";
@@ -31,9 +32,15 @@ function RoleChip() {
 }
 
 export function SettingsPage() {
-  const user = useAuthStore((s) => s.user);
+  const { user: clerkUser } = useUser();
+  const authStoreUser = useAuthStore((s) => s.user);
+  const context = usePermissionStore((s) => s.context);
   const { data: status, isLoading: statusLoading } = useQuery({ queryKey: ["status"], queryFn: getStatus });
   const { data: integrations, refetch: refetchIntegrations } = useQuery({ queryKey: ["integrations"], queryFn: getIntegrations });
+
+  const fullName = clerkUser?.fullName ?? authStoreUser?.full_name;
+  const email = clerkUser?.primaryEmailAddress?.emailAddress ?? authStoreUser?.email;
+  const orgName = context?.organization?.name ?? authStoreUser?.org_name;
 
   const handleConnect = async (provider: string) => {
     try {
@@ -68,17 +75,17 @@ export function SettingsPage() {
           <BlockTitle label="you" title="Profile" />
           <div className="mb-4 flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-gradient-to-br from-crew-500 to-[#0891CF] text-xl font-extrabold text-white shadow-glow">
-              {user?.full_name?.charAt(0) ?? "?"}
+              {fullName?.charAt(0) ?? "?"}
             </div>
             <div>
-              <p className="text-base font-bold text-white">{user?.full_name}</p>
-              <p className="text-xs text-slate-500">{user?.email}</p>
+              <p className="text-base font-bold text-white">{fullName}</p>
+              <p className="text-xs text-slate-500">{email}</p>
             </div>
             <RoleChip />
           </div>
           <dl className="space-y-2">
-            <Row label="Full name" value={user?.full_name} />
-            <Row label="Email" value={user?.email} />
+            <Row label="Full name" value={fullName} />
+            <Row label="Email" value={email} />
           </dl>
         </Panel>
 
@@ -90,7 +97,7 @@ export function SettingsPage() {
               label="Workspace"
               value={
                 <span className="flex items-center justify-end gap-2">
-                  <Building2 className="h-4 w-4 text-crew-300" /> {user?.org_name}
+                  <Building2 className="h-4 w-4 text-crew-300" /> {orgName}
                 </span>
               }
             />
