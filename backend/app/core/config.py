@@ -20,9 +20,14 @@ class Settings(BaseSettings):
     @classmethod
     def assemble_db_connection(cls, v: str) -> str:
         if v and v.startswith("postgres://"):
-            return v.replace("postgres://", "postgresql+asyncpg://", 1)
-        if v and v.startswith("postgresql://"):
-            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif v and v.startswith("postgresql://"):
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            
+        # SQLAlchemy's asyncpg dialect rejects the 'sslmode' query param
+        if "?sslmode=" in v:
+            v = v.split("?")[0]
+            
         return v
 
     jwt_secret_key: str = "dev-secret-change-me"
