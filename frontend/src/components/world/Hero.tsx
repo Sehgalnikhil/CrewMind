@@ -1,8 +1,9 @@
 import { motion, useMotionValue, useScroll, useSpring, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { ArrowRight, Play, Sparkles, TrendingUp, Zap } from "lucide-react";
 import { AGENTS, REVENUE_SERIES } from "./data";
 import { MagneticButton } from "./primitives";
+import { WatchItThinkModal } from "./WatchItThinkModal";
 
 /* Sparkline path from the revenue series */
 function sparkPath(w: number, h: number, series: readonly number[]) {
@@ -154,6 +155,7 @@ function FloatingWidget({
 
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
+  const [watchModalOpen, setWatchModalOpen] = useState(false);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
 
   // Camera-fly-away: the whole stage recedes and blurs as you scroll on.
@@ -222,7 +224,7 @@ export function Hero() {
           <MagneticButton href="/register">
             Hire your AI executives <ArrowRight className="h-4 w-4" />
           </MagneticButton>
-          <MagneticButton href="#dashboard" variant="ghost">
+          <MagneticButton onClick={() => setWatchModalOpen(true)} variant="ghost">
             <Play className="h-4 w-4 text-crew-300" /> Watch it think
           </MagneticButton>
         </motion.div>
@@ -305,6 +307,8 @@ export function Hero() {
           <div className="h-2 w-1 mx-auto rounded-full bg-crew-300" />
         </motion.div>
       </motion.div>
+
+      <WatchItThinkModal isOpen={watchModalOpen} onClose={() => setWatchModalOpen(false)} />
     </section>
   );
 }

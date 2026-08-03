@@ -61,7 +61,10 @@ function TableStage({ speaker, respondingTo, selected, onSelect }: { speaker: Cr
   return (
     <div className="relative h-44 w-full sm:h-52" aria-hidden>
       {/* table surface */}
-      <div className="absolute inset-x-[12%] bottom-2 top-[38%] rounded-[50%] border border-white/[0.08] bg-white/[0.02] grid-lines" />
+      <div 
+        className="absolute rounded-[50%] border border-white/[0.08] bg-white/[0.02] grid-lines" 
+        style={{ left: "12%", right: "12%", top: "38%", bottom: "4%" }}
+      />
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
         {from && to && (
           <motion.line

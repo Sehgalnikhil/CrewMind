@@ -185,22 +185,27 @@ export function MagneticButton({
   className,
   href,
   variant = "primary",
+  onClick,
 }: {
   children: ReactNode;
   className?: string;
-  href: string;
+  href?: string;
   variant?: "primary" | "ghost";
+  onClick?: () => void;
 }) {
-  const ref = useRef<HTMLAnchorElement>(null);
+  const ref = useRef<HTMLAnchorElement & HTMLButtonElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const sx = useSpring(x, { stiffness: 200, damping: 16 });
   const sy = useSpring(y, { stiffness: 200, damping: 16 });
 
+  const MotionTag = href ? motion.a : motion.button;
+
   return (
-    <motion.a
-      ref={ref}
+    <MotionTag
+      ref={ref as any}
       href={href}
+      onClick={onClick}
       style={{ x: sx, y: sy }}
       whileHover={{ scale: 1.04 }}
       whileTap={{ scale: 0.97 }}
@@ -226,7 +231,7 @@ export function MagneticButton({
         <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-crew-200/60 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
       )}
       <span className="relative z-10 inline-flex items-center gap-2">{children}</span>
-    </motion.a>
+    </MotionTag>
   );
 }
 
