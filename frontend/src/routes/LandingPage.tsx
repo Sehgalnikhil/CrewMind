@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/react";
+import { Link } from "react-router-dom";
 import { motion, useScroll, useSpring } from "framer-motion";
 import { Hero } from "#/components/world/Hero";
 import { DashboardSection } from "#/components/world/DashboardSection";
@@ -41,7 +42,7 @@ function Navbar() {
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <a href="/" className="flex items-center gap-2.5">
+        <Link to="/" className="flex items-center gap-2.5">
           <div className="conic-ring flex h-9 w-9 items-center justify-center rounded-xl">
             <div className="flex h-full w-full items-center justify-center rounded-xl bg-[#0B0D14]">
               <span className="bg-gradient-to-br from-crew-300 to-[#67c7f5] bg-clip-text text-sm font-extrabold text-transparent">
@@ -50,18 +51,27 @@ function Navbar() {
             </div>
           </div>
           <span className="text-lg font-extrabold tracking-tight text-white">CrewMind</span>
-        </a>
+        </Link>
         <nav className="hidden items-center gap-8 md:flex">
           {[
             ["The Agents", "#agents"],
             ["Dashboard", "/dashboard"],
             ["Capabilities", "#features"],
-          ].map(([label, href]) => (
-            <a key={href} href={href} className="group relative text-sm font-semibold text-slate-300 transition-colors hover:text-white">
-              {label}
-              <span className="absolute -bottom-1 left-0 h-px w-0 bg-gradient-to-r from-crew-400 to-[#0891CF] transition-all duration-300 group-hover:w-full" />
-            </a>
-          ))}
+          ].map(([label, href]) => {
+            const isInternal = href.startsWith("/");
+            const Tag = isInternal ? Link : "a";
+            return (
+              <Tag 
+                key={href} 
+                to={isInternal ? href : undefined} 
+                href={!isInternal ? href : undefined} 
+                className="group relative text-sm font-semibold text-slate-300 transition-colors hover:text-white"
+              >
+                {label}
+                <span className="absolute -bottom-1 left-0 h-px w-0 bg-gradient-to-r from-crew-400 to-[#0891CF] transition-all duration-300 group-hover:w-full" />
+              </Tag>
+            );
+          })}
         </nav>
         <div className="flex items-center gap-3">
           <Show when="signed-out">

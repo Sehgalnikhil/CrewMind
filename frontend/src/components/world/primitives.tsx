@@ -3,6 +3,7 @@ import type { MotionValue } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import clsx from "clsx";
+import { useNavigate } from "react-router-dom";
 
 /* ---------------------------------------------------------------- */
 /* Scroll-reveal wrapper with cinematic rise + depth                  */
@@ -198,14 +199,24 @@ export function MagneticButton({
   const y = useMotionValue(0);
   const sx = useSpring(x, { stiffness: 200, damping: 16 });
   const sy = useSpring(y, { stiffness: 200, damping: 16 });
+  const navigate = useNavigate();
 
-  const MotionTag = href ? motion.a : motion.button;
+  const isExternal = href && (href.startsWith("http") || href.startsWith("#"));
+  const MotionTag = isExternal ? motion.a : motion.button;
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick) onClick();
+    if (href && !isExternal) {
+      e.preventDefault();
+      navigate(href);
+    }
+  };
 
   return (
     <MotionTag
       ref={ref as any}
-      href={href}
-      onClick={onClick}
+      href={isExternal ? href : undefined}
+      onClick={handleClick}
       style={{ x: sx, y: sy }}
       whileHover={{ scale: 1.04 }}
       whileTap={{ scale: 0.97 }}
