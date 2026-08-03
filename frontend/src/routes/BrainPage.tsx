@@ -31,15 +31,17 @@ function OrbitalBrain({ activeAgent }: { activeAgent: string }) {
         <span key={r} className="absolute rounded-full border border-white/[0.07]" style={{ inset: `${100 - r}%` }} />
       ))}
       {/* nexus core */}
-      <motion.div
-        className="conic-ring absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full"
-        animate={{ scale: [1, 1.06, 1] }}
-        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-      >
-        <span className="flex h-full w-full items-center justify-center rounded-full bg-[#0B0D14] text-sm font-extrabold" style={{ color: COORDINATOR_META.color }}>
-          N
-        </span>
-      </motion.div>
+      <div className="absolute left-1/2 top-1/2 -ml-8 -mt-8 h-16 w-16">
+        <motion.div
+          className="conic-ring flex h-full w-full items-center justify-center rounded-full"
+          animate={{ scale: [1, 1.06, 1] }}
+          transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+        >
+          <span className="flex h-full w-full items-center justify-center rounded-full bg-[#0B0D14] text-sm font-extrabold" style={{ color: COORDINATOR_META.color }}>
+            N
+          </span>
+        </motion.div>
+      </div>
       {/* orbiting executives */}
       <motion.div
         className="absolute inset-0"
@@ -52,13 +54,13 @@ function OrbitalBrain({ activeAgent }: { activeAgent: string }) {
           return (
             <div
               key={a.key}
-              className="absolute left-1/2 top-1/2"
+              className="absolute left-1/2 top-1/2 -ml-5 -mt-5 h-10 w-10"
               style={{ transform: `translate(${Math.cos(ang) * 108}px, ${Math.sin(ang) * 108}px)` }}
             >
               <motion.span
                 animate={{ rotate: -360 }}
                 transition={{ repeat: Infinity, duration: 46, ease: "linear" }}
-                className="flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-2xl border text-xs font-extrabold backdrop-blur-md"
+                className="flex h-full w-full items-center justify-center rounded-2xl border text-xs font-extrabold backdrop-blur-md"
                 style={{
                   backgroundColor: `${a.color}${active ? "40" : "1d"}`,
                   borderColor: `${a.color}${active ? "aa" : "44"}`,
