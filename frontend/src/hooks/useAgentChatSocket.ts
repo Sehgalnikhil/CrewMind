@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@clerk/react";
 import type { CrewAgentKey } from "#/types";
+import { getWsUrl } from "#/api/client";
 
 type SocketEvent =
   | { type: "start"; agent_key: CrewAgentKey }
@@ -39,8 +40,7 @@ export function useAgentChatSocket(
   useEffect(() => {
     if (!conversationId || !token) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${protocol}://${window.location.host}/ws/chat/${conversationId}?token=${token}`);
+    const ws = new WebSocket(getWsUrl(`/ws/chat/${conversationId}`, token));
     wsRef.current = ws;
 
     ws.onmessage = (event) => {

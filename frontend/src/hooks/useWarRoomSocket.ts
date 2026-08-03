@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuthStore } from "#/stores/authStore";
+import { getWsUrl } from "#/api/client";
 
 export function useWarRoomSocket(sessionId: string | null) {
   const token = useAuthStore((s) => s.token);
@@ -15,15 +16,7 @@ export function useWarRoomSocket(sessionId: string | null) {
       return;
     }
 
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    
-    // Netlify cannot proxy WebSockets via _redirects. 
-    // We must connect directly to the Render backend in production.
-    const host = window.location.hostname === "localhost" 
-      ? window.location.host 
-      : "crewmind-bjlj.onrender.com";
-      
-    const ws = new WebSocket(`${protocol}://${host}/ws/warroom/${sessionId}?token=${token}`);
+    const ws = new WebSocket(getWsUrl(`/ws/warroom/${sessionId}`, token));
     socketRef.current = ws;
 
     ws.onmessage = (event) => {

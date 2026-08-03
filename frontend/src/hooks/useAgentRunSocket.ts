@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@clerk/react";
+import { getWsUrl } from "#/api/client";
 
 export type PanelAgentKey = "research" | "strategy" | "finance" | "operations" | "legal" | "coordinator";
 export type AgentPanelStatus = "idle" | "running" | "done";
@@ -51,8 +52,6 @@ export function useAgentRunSocket(runId: string | null) {
 
     setState({ runStatus: "pending", agentStatuses: IDLE_STATUSES, reportId: null, error: null, reasoningSteps: [] });
 
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    
     if (runId === "mock-run-123") {
       let timeoutId: any;
       let isCancelled = false;
@@ -92,9 +91,7 @@ export function useAgentRunSocket(runId: string | null) {
       };
     }
 
-    const ws = new WebSocket(
-      `${protocol}://${window.location.host}/ws/agent-runs/${runId}?token=${token}`
-    );
+    const ws = new WebSocket(getWsUrl(`/ws/agent-runs/${runId}`, token));
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
