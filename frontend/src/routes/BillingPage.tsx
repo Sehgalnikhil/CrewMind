@@ -158,7 +158,7 @@ export function BillingPage() {
 
   const { mutate: subscribeAddon } = useMutation({
     mutationFn: async (addonId: string) => {
-      if (!Razorpay) {
+      if (!("Razorpay" in window)) {
         alert("Payment system is still loading or failed to load. Please disable adblockers and try again.");
         return;
       }
@@ -226,7 +226,7 @@ export function BillingPage() {
       }
       if (planName === "Starter") return;
       
-      if (!Razorpay) {
+      if (!("Razorpay" in window)) {
         alert("Payment system is still loading or failed to load. Please disable adblockers and try again.");
         return;
       }
