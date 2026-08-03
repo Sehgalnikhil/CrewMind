@@ -136,11 +136,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             className="fixed inset-0 z-[90] bg-[#020308]/70 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ opacity: 0, y: -18, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.98 }}
+            initial={{ opacity: 0, y: -18, x: "-50%", scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, x: "-50%", scale: 1 }}
+            exit={{ opacity: 0, y: -12, x: "-50%", scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed left-1/2 top-[14vh] z-[95] w-[min(92vw,620px)] -translate-x-1/2"
+            className="fixed left-1/2 top-[14vh] z-[95] w-[min(92vw,620px)]"
             role="dialog"
             aria-modal="true"
             aria-label="Command palette"
