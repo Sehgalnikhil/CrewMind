@@ -122,7 +122,7 @@ export function AdminPage() {
 
       <div className="grid gap-5 xl:grid-cols-3">
         {/* members */}
-        <Panel delay={0.05} className="p-6 xl:col-span-2">
+        <Panel delay={0.05} className="min-w-0 p-6 xl:col-span-2">
           <BlockTitle
             label={`${members?.length ?? 0} people`}
             title="Members"
@@ -151,7 +151,7 @@ export function AdminPage() {
               </p>
               
               {localInviteToken ? (
-                <div className="flex w-full items-center gap-2">
+                <div className="flex w-full min-w-0 items-center gap-2">
                   <div className="min-w-0 flex-1 truncate rounded-lg border border-white/10 bg-[#0B0D14] px-3 py-2 font-mono text-xs text-slate-300">
                     {window.location.origin}/join/{localInviteToken}
                   </div>
@@ -252,39 +252,41 @@ export function AdminPage() {
         </Panel>
 
         {/* roles matrix */}
-        <Panel delay={0.12} className="p-6">
+        <Panel delay={0.12} className="min-w-0 p-6">
           <BlockTitle label="permissions" title="Roles matrix" />
-          <div className="grid grid-cols-5 gap-1.5 text-center" role="table" aria-label="Role permissions">
-            <span />
-            {ROLES.map((r) => (
-              <span key={r} className="font-mono text-[8px] uppercase tracking-wider text-slate-500">{r}</span>
-            ))}
-            {ROLE_MATRIX.map((row) => (
-              <div key={row.permission} className="contents">
-                <span className="self-center text-left text-[10.5px] font-semibold text-slate-300">{row.capability}</span>
-                {ROLES.map((r: Role) => (
-                  <span key={r} className="flex h-8 items-center justify-center rounded-lg bg-white/[0.03]">
-                    {row.roles.includes(r) ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    ) : (
-                      <Lock className="h-3 w-3 text-slate-600" />
-                    )}
-                  </span>
-                ))}
-              </div>
-            ))}
+          <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:overflow-x-visible sm:px-0">
+            <div className="grid min-w-[400px] grid-cols-5 gap-1.5 text-center" role="table" aria-label="Role permissions">
+              <span />
+              {ROLES.map((r) => (
+                <span key={r} className="font-mono text-[8px] uppercase tracking-wider text-slate-500">{r}</span>
+              ))}
+              {ROLE_MATRIX.map((row) => (
+                <div key={row.permission} className="contents">
+                  <span className="self-center text-left text-[10.5px] font-semibold text-slate-300">{row.capability}</span>
+                  {ROLES.map((r: Role) => (
+                    <span key={r} className="flex h-8 items-center justify-center rounded-lg bg-white/[0.03]">
+                      {row.roles.includes(r) ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-400" />
+                      ) : (
+                        <Lock className="h-3 w-3 text-slate-600" />
+                      )}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </Panel>
       </div>
 
       {/* audit log */}
       <div className="mt-5">
-        <Panel delay={0.2} className="p-6">
+        <Panel delay={0.2} className="min-w-0 p-6">
           <BlockTitle
             label="every action, recorded"
             title="Audit log"
             action={
-              <div className="flex gap-1.5">
+              <div className="flex flex-wrap gap-1.5 justify-end">
                 {AUDIT_KINDS.map((k) => (
                   <button
                     key={k}
@@ -305,11 +307,11 @@ export function AdminPage() {
           />
           <div className="flex max-h-80 flex-col overflow-y-auto">
             {audit.map((a) => (
-              <div key={a.id} className="flex items-center gap-3 border-b border-white/[0.05] py-2.5 text-[12.5px] last:border-0">
+              <div key={a.id} className="flex min-w-0 items-center gap-3 border-b border-white/[0.05] py-2.5 text-[12.5px] last:border-0">
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-crew-400/70" />
-                <span className="font-bold text-white">{a.user_name ?? "System"}</span>
-                <span className="text-slate-400">{describeAction(a.action)}</span>
-                <span className="truncate font-semibold text-slate-300">
+                <span className="shrink-0 font-bold text-white">{a.user_name ?? "System"}</span>
+                <span className="shrink-0 text-slate-400">{describeAction(a.action)}</span>
+                <span className="min-w-0 flex-1 truncate font-semibold text-slate-300">
                   {typeof a.metadata === "object" && a.metadata
                     ? Object.values(a.metadata).filter((v) => typeof v === "string").slice(0, 2).join(" · ")
                     : ""}

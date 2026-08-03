@@ -68,7 +68,6 @@ export function AppShell({
         <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
           <Topbar title={title} onOpenMenu={() => setMobileNavOpen(true)} onOpenPalette={() => setPaletteOpen(true)} />
           <motion.main
-            key={title}
             initial={{ opacity: 0, y: 16, scale: 0.995 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
