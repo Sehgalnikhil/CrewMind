@@ -161,7 +161,7 @@ export function AdminPage() {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
                     }}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
                   >
                     {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                   </button>
@@ -169,7 +169,7 @@ export function AdminPage() {
                     onClick={() => generateLinkMutation.mutate()}
                     disabled={generateLinkMutation.isPending}
                     title="Regenerate link"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-50"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-50"
                   >
                     <RefreshCcw className="h-4 w-4" />
                   </button>
