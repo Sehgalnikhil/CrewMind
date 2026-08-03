@@ -151,8 +151,8 @@ export function AdminPage() {
               </p>
               
               {localInviteToken ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 truncate rounded-lg border border-white/10 bg-[#0B0D14] px-3 py-2 font-mono text-xs text-slate-300">
+                <div className="flex w-full items-center gap-2">
+                  <div className="min-w-0 flex-1 truncate rounded-lg border border-white/10 bg-[#0B0D14] px-3 py-2 font-mono text-xs text-slate-300">
                     {window.location.origin}/join/{localInviteToken}
                   </div>
                   <button

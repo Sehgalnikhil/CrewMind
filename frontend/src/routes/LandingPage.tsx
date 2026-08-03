@@ -109,18 +109,24 @@ export function LandingPage() {
 
       <main className="relative z-10">
         <Hero />
-        <TrustedMarquee />
+        <div className="hidden md:block">
+          <TrustedMarquee />
+        </div>
         <DashboardSection />
-        <TeamSection />
-        <WorkflowSection />
-        <WhySection />
+        <div className="hidden md:block">
+          <TeamSection />
+          <WorkflowSection />
+          <WhySection />
+        </div>
         <CapabilitiesSection />
-        <LiveReportSection />
-        <AnalyticsSection />
-        <IndustriesSection />
-        <SecuritySection />
-        <StoriesSection />
-        <IntegrationsSection />
+        <div className="hidden md:block">
+          <LiveReportSection />
+          <AnalyticsSection />
+          <IndustriesSection />
+          <SecuritySection />
+          <StoriesSection />
+          <IntegrationsSection />
+        </div>
         <FaqSection />
         <FinalCta />
       </main>

@@ -270,8 +270,8 @@ export function WorldFooter() {
   return (
     <footer className="relative border-t border-white/[0.06] bg-[#04050a]/80 px-6 pb-10 pt-16 backdrop-blur-xl">
       <div className="mx-auto max-w-6xl">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(4,1fr)]">
-          <div>
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-[1.4fr_repeat(4,1fr)] md:gap-10">
+          <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2.5">
               <div className="conic-ring flex h-9 w-9 items-center justify-center rounded-xl">
                 <div className="flex h-full w-full items-center justify-center rounded-xl bg-[#0B0D14]">
