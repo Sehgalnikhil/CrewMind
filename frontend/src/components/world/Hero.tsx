@@ -4,6 +4,7 @@ import { ArrowRight, Play, Sparkles, TrendingUp, Zap } from "lucide-react";
 import { AGENTS, REVENUE_SERIES } from "./data";
 import { MagneticButton } from "./primitives";
 import { WatchItThinkModal } from "./WatchItThinkModal";
+import { useAuth } from "@clerk/react";
 
 /* Sparkline path from the revenue series */
 function sparkPath(w: number, h: number, series: readonly number[]) {
@@ -154,6 +155,7 @@ function FloatingWidget({
 /* ------------------------------------------------------------------ */
 
 export function Hero() {
+  const { isSignedIn } = useAuth();
   const ref = useRef<HTMLDivElement>(null);
   const [watchModalOpen, setWatchModalOpen] = useState(false);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
@@ -221,9 +223,15 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="mt-9 flex flex-wrap items-center justify-center gap-4"
         >
-          <MagneticButton href="/register">
-            Hire your AI executives <ArrowRight className="h-4 w-4" />
-          </MagneticButton>
+          {isSignedIn ? (
+            <MagneticButton href="/dashboard">
+              Go to Dashboard <ArrowRight className="h-4 w-4" />
+            </MagneticButton>
+          ) : (
+            <MagneticButton href="/register">
+              Hire your AI executives <ArrowRight className="h-4 w-4" />
+            </MagneticButton>
+          )}
           <MagneticButton onClick={() => setWatchModalOpen(true)} variant="ghost">
             <Play className="h-4 w-4 text-crew-300" /> Watch it think
           </MagneticButton>
