@@ -119,12 +119,13 @@ async def run_analysis(agent_run_id: str, workspace_id: str) -> None:
                 run.error_message = str(exc)
                 await db.commit()
         await emit({"type": "failed", "message": str(exc)})
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
         logger.exception("Analysis run %s failed", agent_run_id)
+        error_msg = f"Unexpected error: {str(exc)}"
         async with AsyncSessionLocal() as db:
             run = await db.get(AgentRun, agent_run_id)
             if run is not None:
                 run.status = "failed"
-                run.error_message = "Unexpected error during analysis."
+                run.error_message = error_msg
                 await db.commit()
-        await emit({"type": "failed", "message": "Unexpected error during analysis."})
+        await emit({"type": "failed", "message": error_msg})
